@@ -1,0 +1,49 @@
+{
+  "info": {
+    "_postman_id": "8b39c836-8ba8-4bb9-8ef2-agentflowbase",
+    "name": "AgentFlow Base API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api" },
+    { "key": "token", "value": "" },
+    { "key": "testId", "value": "" },
+    { "key": "newUsername", "value": "postman.user" }
+  ],
+  "item": [
+    {
+      "name": "登入 admin",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}" }, "url": "{{baseUrl}}/auth/login" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('HTTP 200', () => pm.response.to.have.status(200));", "const json = pm.response.json();", "pm.test('登入回應正確', () => { pm.expect(json.success).to.eql(true); pm.expect(json.data.roles).to.include('SYSTEM_ADMIN'); });", "pm.collectionVariables.set('token', json.data.token);"] } }]
+    },
+    {
+      "name": "查詢使用者",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/admin/users" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('使用者列表回應正確', () => { pm.response.to.have.status(200); const json = pm.response.json(); pm.expect(json.success).to.eql(true); pm.expect(json.data.length).to.be.above(3); });"] } }]
+    },
+    {
+      "name": "新增使用者",
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["pm.collectionVariables.set('newUsername', 'postman.' + Date.now());"] } },
+        { "listen": "test", "script": { "exec": ["pm.test('預設員工與管理員新增標記正確', () => { pm.response.to.have.status(200); const data = pm.response.json().data; pm.expect(data.registrationMethod).to.eql('管理員新增'); pm.expect(data.roles).to.include('EMPLOYEE'); });"] } }
+      ],
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"fullName\":\"Postman User\",\"username\":\"{{newUsername}}\",\"email\":\"{{newUsername}}@agentflow.local\",\"password\":\"password123\"}" }, "url": "{{baseUrl}}/admin/users" }
+    },
+    {
+      "name": "新增 test",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Postman CRUD\",\"description\":\"MSSQL 整合測試\",\"testStatus\":\"READY\"}" }, "url": "{{baseUrl}}/test/testTemp" },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test('新增 test 回應正確', () => { pm.response.to.have.status(200); pm.expect(json.data.testStatus).to.eql('READY'); });", "pm.collectionVariables.set('testId', json.data.id);"] } }]
+    },
+    {
+      "name": "更新 test",
+      "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Postman CRUD 完成\",\"description\":\"MSSQL 整合測試\",\"testStatus\":\"DONE\"}" }, "url": "{{baseUrl}}/test/testTemp/{{testId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('更新 test 回應正確', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().data.testStatus).to.eql('DONE'); });"] } }]
+    },
+    {
+      "name": "刪除 test",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/test/testTemp/{{testId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('刪除 test 回應正確', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().success).to.eql(true); });"] } }]
+    }
+  ]
+}
+

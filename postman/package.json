@@ -1,0 +1,12 @@
+{
+  "name": "agentflow-postman-tests",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test": "newman run agentflow-base.postman_collection.json --reporters cli,json --reporter-json-export ../backend/build/newman-result.json"
+  },
+  "devDependencies": {
+    "newman": "6.2.2"
+  }
+}
+

@@ -1,0 +1,46 @@
+@import url("../0.共用樣式/styles.css");
+
+.page-view { display: none; }
+.page-view.is-active { display: block; animation: view-in .24s ease-out; }
+@keyframes view-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.info-banner { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; padding: 15px 17px; color: color-mix(in srgb, var(--primary) 86%, var(--text)); border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border)); border-radius: 14px; background: color-mix(in srgb, var(--primary) 8%, var(--surface)); }
+.info-banner .icon { flex: 0 0 auto; margin-top: 2px; }
+.info-banner p { margin: 0; font-size: .9rem; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.role-tag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); font-size: .74rem; font-weight: 800; }
+.role-tag.leader { color: #986018; background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.role-tag.admin { color: var(--secondary); background: color-mix(in srgb, var(--secondary) 14%, transparent); }
+.source-label { display: inline-flex; padding: 4px 9px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 999px; font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.source-label.managed { color: var(--secondary); border-color: color-mix(in srgb, var(--secondary) 30%, var(--border)); background: color-mix(in srgb, var(--secondary) 8%, transparent); }
+.member-cell { display: flex; align-items: center; gap: 10px; }
+.member-cell .avatar { width: 34px; height: 34px; font-size: .72rem; }
+.member-cell strong, .member-cell span { display: block; }
+.member-cell span { color: var(--text-muted); font-size: .78rem; }
+.role-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 22px; margin-bottom: 16px; }
+.role-card h3 { margin: 0 0 4px; }
+.role-card p { margin: 0; }
+.access-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+.access-item { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); }
+.access-item strong { display: block; margin-bottom: 3px; font-size: .85rem; }
+.access-item span { color: var(--text-muted); font-size: .78rem; }
+.stepper { display: flex; align-items: center; gap: 10px; margin: 4px 0 26px; }
+.step { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: .8rem; font-weight: 750; white-space: nowrap; }
+.step::before { content: attr(data-step); display: grid; place-items: center; width: 23px; height: 23px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 50%; font-size: .7rem; }
+.step.active { color: var(--primary); }
+.step.active::before { color: white; border-color: var(--primary); background: var(--primary); }
+.step-line { width: 42px; height: 1px; background: var(--border); }
+.password-note { display: flex; gap: 10px; padding: 14px; border-radius: 12px; background: var(--surface-soft); }
+.password-note p { margin: 0; font-size: .84rem; }
+.toast { position: fixed; z-index: 100; right: 24px; bottom: 24px; display: flex; align-items: center; gap: 9px; max-width: calc(100vw - 40px); padding: 13px 16px; color: white; border-radius: 12px; background: #182033; box-shadow: var(--shadow); opacity: 0; transform: translateY(12px); pointer-events: none; transition: .25s; }
+.toast.is-visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 600px) {
+  .role-card { grid-template-columns: 1fr; }
+  .role-card .btn { width: 100%; }
+  .access-grid { grid-template-columns: 1fr; }
+  .stepper { overflow-x: auto; padding-bottom: 4px; }
+  .step-line { min-width: 22px; }
+  .data-table td[data-label="操作"] { align-items: flex-start; }
+  .row-actions { flex-wrap: wrap; }
+}

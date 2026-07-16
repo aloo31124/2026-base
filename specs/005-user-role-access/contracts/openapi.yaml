@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: AgentFlow User Role API
+  version: 1.0.0
+paths:
+  /api/auth/login:
+    post:
+      summary: 帳密登入並取得 JWT
+      responses:
+        '200': { description: 登入成功 }
+        '401': { description: 帳密錯誤或帳號停用 }
+  /api/admin/users:
+    get:
+      summary: 系統管理員查詢使用者
+      responses:
+        '200': { description: 使用者列表 }
+        '403': { description: 無系統管理員權限 }
+    post:
+      summary: 系統管理員建立使用者並預設 EMPLOYEE
+      responses:
+        '200': { description: 建立成功 }
+        '409': { description: 帳號或信箱重複 }
+  /api/admin/users/{id}/roles:
+    post:
+      summary: 附加角色
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 授予成功 }
+

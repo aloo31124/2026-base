@@ -1,0 +1,39 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: agentflow-base
+  datasource:
+    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=base_20260716_01;encrypt=true;trustServerCertificate=true}
+    username: ${DB_USERNAME:base_20260716_01}
+    password: ${DB_PASSWORD:base_20260716_01}
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Taipei
+  jackson:
+    time-zone: Asia/Taipei
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:agentflow-base-2026-jwt-secret-must-have-at-least-32-bytes}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
+
+logging:
+  config: classpath:logback-spring.xml
+
