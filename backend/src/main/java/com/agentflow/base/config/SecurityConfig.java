@@ -49,7 +49,9 @@ public class SecurityConfig {
 
     @Bean CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origin}") String origin) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(origin)); config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        // 支援逗號分隔多來源：Cloud Run 同一服務有雜湊型與確定型兩種網址，需同時放行
+        config.setAllowedOrigins(java.util.Arrays.stream(origin.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList());
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(); source.registerCorsConfiguration("/**", config); return source;
     }
