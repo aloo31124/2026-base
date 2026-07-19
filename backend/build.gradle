@@ -29,6 +29,8 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
+    // GCP Cloud SQL for SQL Server 連接器：DB_URL 帶 socketFactoryClass 時啟用，本機連線不受影響
+    runtimeOnly 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.28.4'
     runtimeOnly 'com.h2database:h2'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -1,0 +1,224 @@
+# ====================================
+# AgentFlow Base - GCP Cloud Build 自動部署
+# 前後端一次部署至 Cloud Run（含 MSSQL / Cloud SQL 連線）
+# ====================================
+#
+# 使用方式 (於專案根目錄執行):
+#   gcloud builds submit --config cloudbuild.yaml --project base-502702
+#
+# GCP 環境:
+#   專案編號: 316015752010
+#   專案 ID : base-502702
+#   區  域 : asia-east1
+#   服  務 : base-server (後端 Spring Boot), base-client (前端 React/Vite)
+#   資料庫 : Cloud SQL for SQL Server 2022 Express (執行個體 base-mssql)
+#
+# 前置作業 (僅需執行一次):
+#   gcloud auth login aloo31124@gmail.com
+#   gcloud services enable cloudbuild.googleapis.com run.googleapis.com \
+#       artifactregistry.googleapis.com sqladmin.googleapis.com compute.googleapis.com \
+#       --project base-502702
+#   gcloud artifacts repositories create base-repo --repository-format=docker \
+#       --location=asia-east1 --project base-502702
+#   gcloud sql instances create base-mssql --database-version=SQLSERVER_2022_EXPRESS \
+#       --tier=db-custom-1-3840 --region=asia-east1 --storage-size=20 --storage-type=SSD \
+#       --root-password=<管理者密碼> --project base-502702
+#   gcloud sql databases create base_20260716_01 --instance=base-mssql --project base-502702
+#   gcloud sql users create base_20260716_01 --instance=base-mssql --password=<下方 _DB_PASSWORD> \
+#       --project base-502702
+#   # 注意: API 建立的 SQL Server login 不會自動對應到資料庫，需以 sqlserver 管理者連線執行:
+#   #   USE [base_20260716_01];
+#   #   CREATE USER [base_20260716_01] FOR LOGIN [base_20260716_01];
+#   #   ALTER ROLE db_owner ADD MEMBER [base_20260716_01];
+#   # (可臨時 gcloud sql instances patch base-mssql --authorized-networks=<本機IP>/32 後用 sqlcmd 執行，完成後 --clear-authorized-networks)
+#   # Cloud Build / Cloud Run 預設服務帳戶需要的角色 (run.admin, iam.serviceAccountUser, cloudsql.client)
+#   gcloud projects add-iam-policy-binding base-502702 \
+#       --member=serviceAccount:316015752010-compute@developer.gserviceaccount.com --role=roles/run.admin
+#
+# MSSQL 連線機制:
+#   後端以 Cloud SQL Java Connector (socketFactory) 連 Cloud SQL for SQL Server，
+#   走 IAM 授權加密通道，不需開放公網 IP 白名單。
+#   DB_URL 由 Step「deploy-server」組出，本機開發仍用 application.yml 預設 localhost 連線。
+#   注意: 密碼以 substitution 明碼存放僅供測試機使用，正式環境請改用 Secret Manager。
+# ====================================
+
+substitutions:
+  _GCP_PROJECT_ID: base-502702
+  _REGION: asia-east1
+  _AR_REPO: base-repo
+  _SERVER_SERVICE: base-server
+  _CLIENT_SERVICE: base-client
+  # Cloud SQL 執行個體連線名稱 (PROJECT:REGION:INSTANCE)
+  _CLOUDSQL_INSTANCE: base-502702:asia-east1:base-mssql
+  _DB_NAME: base_20260716_01
+  _DB_USERNAME: base_20260716_01
+  _DB_PASSWORD: 'Base20260716#01!'
+  _JWT_SECRET: 'base-2026-gcp-test-jwt-secret-please-rotate-0123456789abcdef'
+
+steps:
+  # Step 0: 確保 Artifact Registry repo 存在 (冪等，全新專案也可一鍵部署)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        gcloud artifacts repositories describe ${_AR_REPO} \
+          --location=${_REGION} --project=${_GCP_PROJECT_ID} >/dev/null 2>&1 || \
+        gcloud artifacts repositories create ${_AR_REPO} --repository-format=docker \
+          --location=${_REGION} --project=${_GCP_PROJECT_ID}
+    id: 'ensure-ar-repo'
+
+  # ========== 後端部署 ==========
+  # Step 1: 建置後端 Docker Image (Gradle bootJar, 不含前端與測試)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_AR_REPO}/${_SERVER_SERVICE}:latest'
+      - './backend'
+    id: 'build-server'
+    waitFor: ['ensure-ar-repo']
+
+  # Step 2: 推送後端 Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_AR_REPO}/${_SERVER_SERVICE}:latest']
+    id: 'push-server'
+    waitFor: ['build-server']
+
+  # Step 3: 部署後端至 Cloud Run (注入 MSSQL/Cloud SQL 連線與 JWT 環境變數)
+  #   DB_URL 使用 Cloud SQL Java Connector 的 socketFactory 機制;
+  #   encrypt=false 是因加密通道已由 Connector 建立，避免與 JDBC driver TLS 重複交涉。
+  #   CORS 先指向可預期的前端網址，前端部署完成後由 Step「update-server-cors」校正。
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        DB_URL="jdbc:sqlserver://localhost;databaseName=${_DB_NAME};socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=${_CLOUDSQL_INSTANCE};encrypt=false"
+        CLIENT_ORIGIN="https://${_CLIENT_SERVICE}-$(gcloud projects describe ${_GCP_PROJECT_ID} --format='value(projectNumber)').${_REGION}.run.app"
+        gcloud run deploy ${_SERVER_SERVICE} \
+          --image=${_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_AR_REPO}/${_SERVER_SERVICE}:latest \
+          --project=${_GCP_PROJECT_ID} \
+          --region=${_REGION} \
+          --platform=managed \
+          --port=8080 \
+          --memory=1Gi \
+          --cpu=1 \
+          --min-instances=0 \
+          --max-instances=5 \
+          --timeout=300 \
+          --allow-unauthenticated \
+          --set-env-vars="^##^DB_URL=$${DB_URL}##DB_USERNAME=${_DB_USERNAME}##DB_PASSWORD=${_DB_PASSWORD}##JWT_SECRET=${_JWT_SECRET}##CORS_ALLOWED_ORIGIN=$${CLIENT_ORIGIN}"
+    id: 'deploy-server'
+    waitFor: ['push-server']
+
+  # Step 4: 取得後端 URL 供前端建置使用
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        SERVER_URL=$(gcloud run services describe ${_SERVER_SERVICE} \
+          --project=${_GCP_PROJECT_ID} --region=${_REGION} \
+          --format='value(status.url)')
+        echo "$${SERVER_URL}" > /workspace/server_url.txt
+        echo "後端 URL: $${SERVER_URL}"
+    id: 'get-server-url'
+    waitFor: ['deploy-server']
+
+  # ========== 前端部署 ==========
+  # Step 5: 建置前端 Docker Image (注入後端 API URL, 含 /api 前綴)
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        SERVER_URL=$(cat /workspace/server_url.txt)
+        echo "前端建置使用後端 API URL: $${SERVER_URL}/api"
+        docker build \
+          --build-arg VITE_API_URL=$${SERVER_URL}/api \
+          -t ${_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_AR_REPO}/${_CLIENT_SERVICE}:latest \
+          ./frontend
+    id: 'build-client'
+    waitFor: ['get-server-url']
+
+  # Step 6: 推送前端 Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_AR_REPO}/${_CLIENT_SERVICE}:latest']
+    id: 'push-client'
+    waitFor: ['build-client']
+
+  # Step 7: 部署前端至 Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_CLIENT_SERVICE}'
+      - '--image=${_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_AR_REPO}/${_CLIENT_SERVICE}:latest'
+      - '--project=${_GCP_PROJECT_ID}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--port=8080'
+      - '--memory=256Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=5'
+      - '--allow-unauthenticated'
+    id: 'deploy-client'
+    waitFor: ['push-client']
+
+  # Step 8: 以前端實際網址校正後端 CORS 設定
+  #   Cloud Run 同一服務有兩種網址（雜湊型 xxx-<hash>-<region碼>.a.run.app 與
+  #   確定型 xxx-<專案編號>.<region>.run.app），使用者可能從任一網址開站，兩個都要放行。
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        CLIENT_URL=$(gcloud run services describe ${_CLIENT_SERVICE} \
+          --project=${_GCP_PROJECT_ID} --region=${_REGION} \
+          --format='value(status.url)')
+        PROJECT_NUMBER=$(gcloud projects describe ${_GCP_PROJECT_ID} --format='value(projectNumber)')
+        DETERMINISTIC_URL="https://${_CLIENT_SERVICE}-$${PROJECT_NUMBER}.${_REGION}.run.app"
+        if [ "$${CLIENT_URL}" = "$${DETERMINISTIC_URL}" ]; then
+          ORIGINS="$${CLIENT_URL}"
+        else
+          ORIGINS="$${CLIENT_URL},$${DETERMINISTIC_URL}"
+        fi
+        gcloud run services update ${_SERVER_SERVICE} \
+          --project=${_GCP_PROJECT_ID} --region=${_REGION} \
+          --update-env-vars="^##^CORS_ALLOWED_ORIGIN=$${ORIGINS}"
+        echo "後端 CORS 允許來源已更新為: $${ORIGINS}"
+    id: 'update-server-cors'
+    waitFor: ['deploy-client']
+
+  # Step 9: 顯示最終部署資訊
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        SERVER_URL=$(gcloud run services describe ${_SERVER_SERVICE} \
+          --project=${_GCP_PROJECT_ID} --region=${_REGION} \
+          --format='value(status.url)')
+        CLIENT_URL=$(gcloud run services describe ${_CLIENT_SERVICE} \
+          --project=${_GCP_PROJECT_ID} --region=${_REGION} \
+          --format='value(status.url)')
+        echo "===================================="
+        echo "✅ 部署完成"
+        echo "後端 (API)  : $${SERVER_URL}"
+        echo "前端 (Web) : $${CLIENT_URL}"
+        echo "===================================="
+    id: 'show-urls'
+    waitFor: ['update-server-cors']
+
+images:
+  - '${_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_AR_REPO}/${_SERVER_SERVICE}:latest'
+  - '${_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_AR_REPO}/${_CLIENT_SERVICE}:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+timeout: '2400s'

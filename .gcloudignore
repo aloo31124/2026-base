@@ -1,0 +1,19 @@
+# gcloud builds submit 上傳排除清單（僅上傳建置所需檔案）
+.gcloudignore
+.git
+.gitignore
+**/node_modules
+backend/build
+backend/.gradle
+backend/logs
+frontend/dist
+frontend/cypress
+postman
+report
+uiux
+specs
+skills
+scripts
+.claude
+**/*.log
+**/*.tsbuildinfo
