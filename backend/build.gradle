@@ -1,60 +1,74 @@
+// plugins：套用建置所需的外掛
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '4.1.0'
-    id 'io.spring.dependency-management' version '1.1.7'
-    id 'com.github.node-gradle.node' version '7.1.0'
+    id 'java'                                                      // Java 專案基礎外掛，提供 compile/test/jar 等標準任務
+    id 'org.springframework.boot' version '4.1.0'                  // Spring Boot 外掛，提供 bootJar/bootRun，並管理啟動器版本
+    id 'io.spring.dependency-management' version '1.1.7'           // 依賴版本管理外掛，讓 Spring Boot BOM 統一鎖定各套件版本
+    id 'com.github.node-gradle.node' version '7.1.0'               // Node.js 外掛，讓 Gradle 可下載 Node/npm 並執行前端建置指令
 }
 
+// group / version：本專案的 Maven 座標（groupId 與版本號），影響產出 artifact 的命名
 group = 'com.agentflow'
 version = '1.0.0'
 
+// java：Java 專案設定
 java {
+    // toolchain：指定編譯與執行所使用的 JDK 版本，Gradle 會自動尋找或下載對應版本，不受本機預設 JDK 影響
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(21)                // 使用 JDK 21
     }
 }
 
+// repositories：套件下載來源
 repositories {
-    mavenCentral()
+    mavenCentral()                                                  // 從 Maven Central 中央倉庫解析依賴
 }
 
+// dependencies：專案依賴的套件，依 configuration（作用範圍）分組
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-jackson'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
-    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
+    // implementation：編譯與執行皆需要，且不會外洩到使用此模組的其他模組的 classpath
+    implementation 'org.springframework.boot:spring-boot-starter-web'         // Spring MVC + 內嵌 Tomcat，提供 REST API 能力
+    implementation 'org.springframework.boot:spring-boot-starter-jackson'     // JSON 序列化/反序列化（Jackson）
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'    // Spring Data JPA，含 Hibernate ORM
+    implementation 'org.springframework.boot:spring-boot-starter-security'    // Spring Security，提供認證/授權機制
+    implementation 'org.springframework.boot:spring-boot-starter-validation'  // Bean Validation（如 @NotNull、@Size）
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'    // 健康檢查、指標等維運端點
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'                          // JWT API 介面，用於簽發/解析 Token
+
+    // runtimeOnly：只在執行期需要（如實作類、驅動程式），編譯期不需出現在 classpath
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'                            // JJWT 的實作套件
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'                        // JJWT 使用 Jackson 處理 JSON 的整合套件
+    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'                         // MSSQL JDBC 驅動，供直連資料庫使用
     // GCP Cloud SQL for SQL Server 連接器：DB_URL 帶 socketFactoryClass 時啟用，本機連線不受影響
     runtimeOnly 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.28.4'
-    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.h2database:h2'                                          // H2 內嵌資料庫，供測試或本機快速啟動使用
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
-    testImplementation 'org.springframework.security:spring-security-test'
+    // testImplementation：僅測試原始碼編譯與執行時需要
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'        // 測試基礎套件（JUnit5、Mockito、AssertJ 等）
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'         // MockMvc 等 Web 層測試工具
+    testImplementation 'org.springframework.security:spring-security-test'        // Security 相關測試輔助（如模擬登入使用者）
 }
 
+// tasks.named('test')：設定既有的 test 任務
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform()                                              // 改用 JUnit 5（JUnit Platform）執行測試
 }
 
+// node：node-gradle 外掛設定，控制 Gradle 要下載/使用哪個 Node 版本，以及在哪個目錄執行 npm 指令
 node {
-    version = '24.18.0'
-    npmVersion = '11.6.2'
-    download = true
-    nodeProjectDir = file('../frontend')
+    version = '24.18.0'                                             // 指定使用的 Node.js 版本
+    npmVersion = '11.6.2'                                           // 指定使用的 npm 版本
+    download = true                                                 // 若本機沒有對應版本，允許 Gradle 自動下載
+    nodeProjectDir = file('../frontend')                            // npm 指令的工作目錄（前端專案根目錄）
 }
 
+// tasks.register(...)：自訂新任務 frontendBuild，型別為 NpmTask（執行 npm 指令）
 tasks.register('frontendBuild', com.github.gradle.node.npm.task.NpmTask) {
-    dependsOn tasks.npmInstall
-    workingDir = file('../frontend')
-    args = ['run', 'build']
+    dependsOn tasks.npmInstall                                      // 執行前先確保已 npm install（node 外掛內建任務）
+    workingDir = file('../frontend')                                // 指定執行 npm 指令的目錄
+    args = ['run', 'build']                                         // 實際執行的指令：npm run build
 }
 
+// tasks.named('build')：讓既有的 build 任務相依於 frontendBuild
 tasks.named('build') {
-    dependsOn tasks.frontendBuild
+    dependsOn tasks.frontendBuild                                   // 執行 gradle build 時，會一併觸發前端建置
 }
