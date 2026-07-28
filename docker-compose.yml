@@ -1,0 +1,39 @@
+# 本機開發用的 SQL Server 容器，讓 Windows / macOS 都能以同一種方言開發，
+# 與 GCP Cloud SQL for SQL Server 2022 Express 保持一致，避免 ddl-auto 產生的 DDL 在環境間漂移。
+#
+# 啟動：docker compose up -d
+# 建庫：bash ./scripts/init-database.sh   （Windows: pwsh ./scripts/init-database.ps1）
+# 停止：docker compose down               （加 -v 會一併刪除資料）
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    # 此 image 僅發佈 amd64，Apple Silicon 需 Docker Desktop 開啟 Rosetta 模擬
+    # （Settings → General → Use Rosetta for x86_64/amd64 emulation）。
+    # 若模擬不可行，可改用原生 arm64 的 mcr.microsoft.com/azure-sql-edge，
+    # 但其功能非完整版 SQL Server，僅作最後手段。
+    platform: linux/amd64
+    container_name: base-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Express
+      # SA 密碼須符合 SQL Server 複雜度原則；沿用 cloudbuild.yaml 的 _DB_PASSWORD 值。
+      # 應用程式登入帳號則由 init-database.sh 以 CHECK_POLICY = OFF 建立，維持既有簡易密碼。
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Base20260716#01!}
+      TZ: Asia/Taipei
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -b -Q "SELECT 1"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  mssql-data:

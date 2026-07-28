@@ -1,0 +1,17 @@
+# 無 Docker 時的備援啟動 profile：以 H2 檔案模式模擬 MSSQL，資料存在 backend/data 下可保留。
+# 啟用方式：SPRING_PROFILES_ACTIVE=h2 ./gradlew -p backend bootRun
+#
+# 注意：H2 的 MSSQLServer 相容模式與真實 SQL Server 在型別對應與 ddl-auto 行為上仍有差異，
+# 此路徑僅供「先把畫面跑起來」，任何要合併進 main 的變更都必須在 Docker MSSQL 上覆驗。
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/agentflow;MODE=MSSQLServer;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
