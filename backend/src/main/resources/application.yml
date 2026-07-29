@@ -33,7 +33,13 @@ app:
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
   cors:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
+  line-oauth:
+    channel-id: ${LINE_CHANNEL_ID:2009072345}
+    channel-secret: ${LINE_CHANNEL_SECRET:381bb438d2c973636d712aaf6ea99909}
+    callback-url: ${LINE_CALLBACK_URL:https://base-client-316015752010.asia-east1.run.app/api/auth/line/callback}
+    mock-enabled: ${LINE_OAUTH_MOCK_ENABLED:false}
+    mock-provider-base-url: ${LINE_OAUTH_MOCK_PROVIDER_BASE_URL:http://localhost:8080}
+    attempt-ttl-minutes: ${LINE_OAUTH_ATTEMPT_TTL_MINUTES:10}
 
 logging:
   config: classpath:logback-spring.xml
-

@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UserAccountDao extends JpaRepository<UserAccount, UUID> {
     Optional<UserAccount> findByUsername(String username);
     boolean existsByEmail(String email);
+    boolean existsByUsername(String username);
 }
-
