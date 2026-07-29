@@ -32,6 +32,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'    // Spring Security，提供認證/授權機制
     implementation 'org.springframework.boot:spring-boot-starter-validation'  // Bean Validation（如 @NotNull、@Size）
     implementation 'org.springframework.boot:spring-boot-starter-actuator'    // 健康檢查、指標等維運端點
+    implementation 'org.springframework.boot:spring-boot-starter-mail'        // Spring Mail，透過 Gmail SMTP 寄送信箱驗證碼
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'                          // JWT API 介面，用於簽發/解析 Token
 
     // runtimeOnly：只在執行期需要（如實作類、驅動程式），編譯期不需出現在 classpath

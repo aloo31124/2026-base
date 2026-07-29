@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: agentflow-base
+  config:
+    # 本機可使用被 Git 忽略的 .env；正式環境仍由作業系統環境變數或 Secret Manager 覆寫。
+    import: optional:file:.env[.properties],optional:file:../.env[.properties]
   datasource:
     url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=base_20260716_01;encrypt=true;trustServerCertificate=true}
     username: ${DB_USERNAME:base_20260716_01}
@@ -20,6 +23,19 @@ spring:
           time_zone: Asia/Taipei
   jackson:
     time-zone: Asia/Taipei
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USER:}
+    password: ${EMAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+      "[mail.smtp.starttls.required]": true
+      "[mail.smtp.connectiontimeout]": 10000
+      "[mail.smtp.timeout]": 10000
+      "[mail.smtp.writetimeout]": 10000
 
 management:
   endpoints:
@@ -33,6 +49,8 @@ app:
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
   cors:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
+  mail:
+    sender: ${EMAIL_USER:}
   line-oauth:
     channel-id: ${LINE_CHANNEL_ID:2009072345}
     channel-secret: ${LINE_CHANNEL_SECRET:381bb438d2c973636d712aaf6ea99909}
