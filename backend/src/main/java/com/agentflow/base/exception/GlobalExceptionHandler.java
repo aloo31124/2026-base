@@ -36,9 +36,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ApiResponse<Void>> handleDenied(AccessDeniedException ex, HttpServletRequest request) {
         log.warn("權限不足: {}", ex.getMessage());
-        String message = request.getRequestURI().startsWith("/api/admin/registration-management")
-            ? "[註冊登入管理] [api] 無系統管理員權限。"
-            : "[使用者角色] [api] 無系統管理員權限。";
+        String message;
+        if (request.getRequestURI().startsWith("/api/admin/company-supervisor-management")) {
+            message = "[公司主管管理] [api] 無系統管理員權限。";
+        } else if (request.getRequestURI().startsWith("/api/admin/registration-management")) {
+            message = "[註冊登入管理] [api] 無系統管理員權限。";
+        } else {
+            message = "[使用者角色] [api] 無系統管理員權限。";
+        }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(message));
     }
 

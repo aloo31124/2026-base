@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: 公司主管管理 API
+  version: 1.0.0
+paths:
+  /api/admin/company-supervisor-management/companies:
+    get:
+      summary: 查詢公司
+      parameters:
+        - { name: name, in: query, schema: { type: string } }
+      responses:
+        "200": { description: 成功 }
+        "403": { description: 無系統管理員權限 }
+    post:
+      summary: 新增公司
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyRequest"
+      responses:
+        "200": { description: 新增成功 }
+        "409": { description: 公司名稱重複 }
+  /api/admin/company-supervisor-management/companies/{id}:
+    put:
+      summary: 修改公司
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyRequest"
+      responses:
+        "200": { description: 修改成功 }
+    delete:
+      summary: 刪除公司
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: 刪除成功 }
+        "409": { description: 尚有公司成員綁定 }
+  /api/admin/company-supervisor-management/supervisors:
+    get:
+      summary: 查詢主管
+      parameters:
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        "200": { description: 成功 }
+    post:
+      summary: 由既有使用者建立主管
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupervisorCreateRequest"
+      responses:
+        "200": { description: 建立成功 }
+        "404": { description: 使用者不存在 }
+        "409": { description: 已是主管 }
+  /api/admin/company-supervisor-management/supervisors/{id}:
+    put:
+      summary: 修改主管職稱
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: 修改成功 }
+    delete:
+      summary: 刪除主管身分
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: 刪除成功 }
+        "409": { description: 主管仍綁定公司 }
+  /api/admin/company-supervisor-management/bindings:
+    get:
+      summary: 依公司或主管查詢綁定
+      parameters:
+        - { name: companyName, in: query, schema: { type: string } }
+        - { name: supervisorName, in: query, schema: { type: string } }
+      responses:
+        "200": { description: 成功 }
+    post:
+      summary: 建立公司主管綁定
+      responses:
+        "200": { description: 綁定成功 }
+        "409": { description: 使用者已綁定公司 }
+  /api/admin/company-supervisor-management/bindings/{id}:
+    delete:
+      summary: 取消公司主管綁定
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: 取消成功 }
+components:
+  schemas:
+    CompanyRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, maxLength: 500 }
+    SupervisorCreateRequest:
+      type: object
+      required: [userId, title]
+      properties:
+        userId: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 80 }

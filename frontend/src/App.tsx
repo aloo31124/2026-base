@@ -9,6 +9,7 @@ import EmailVerificationPage from './pages/EmailVerificationPage';
 import EmailRegistrationPage from './pages/EmailRegistrationPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import RegistrationManagementPage from './pages/RegistrationManagementPage';
+import CompanySupervisorManagementPage from './pages/CompanySupervisorManagementPage';
 
 function Guard({
   children,
@@ -38,6 +39,11 @@ export default function App() {
     <Route path="/registration-management" element={
       <Guard admin unauthorizedMessage="[註冊登入管理] [頁面] 無系統管理員權限。">
         <RegistrationManagementPage />
+      </Guard>
+    } />
+    <Route path="/company-supervisor-management" element={
+      <Guard admin unauthorizedMessage="[公司主管管理] [頁面] 無系統管理員權限。">
+        <CompanySupervisorManagementPage />
       </Guard>
     } />
     <Route path="/test/testTemp/" element={<Guard><TestPage /></Guard>} />
