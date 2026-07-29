@@ -18,3 +18,10 @@ logging:
     root: WARN
     com.agentflow: INFO
 
+app:
+  email:
+    capture-enabled: true
+  line-oauth:
+    mock-enabled: true
+    callback-url: http://localhost:5173/api/auth/line/callback
+    mock-provider-base-url: http://localhost:8080

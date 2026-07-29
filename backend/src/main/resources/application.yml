@@ -20,6 +20,17 @@ spring:
           time_zone: Asia/Taipei
   jackson:
     time-zone: Asia/Taipei
+  mail:
+    host: ${EMAIL_HOST:smtp.gmail.com}
+    port: ${EMAIL_PORT:587}
+    username: ${EMAIL_USER:}
+    password: ${EMAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 management:
   endpoints:
@@ -33,7 +44,15 @@ app:
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
   cors:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
+  line-oauth:
+    channel-id: ${LINE_CHANNEL_ID:}
+    channel-secret: ${LINE_CHANNEL_SECRET:}
+    callback-url: ${LINE_CALLBACK_URL:http://localhost:5173/api/auth/line/callback}
+    mock-enabled: ${LINE_OAUTH_MOCK_ENABLED:false}
+    mock-provider-base-url: ${LINE_OAUTH_MOCK_PROVIDER_BASE_URL:http://localhost:8080}
+    attempt-ttl-minutes: ${LINE_OAUTH_ATTEMPT_TTL_MINUTES:10}
+  email:
+    capture-enabled: ${EMAIL_CAPTURE_ENABLED:false}
 
 logging:
   config: classpath:logback-spring.xml
-

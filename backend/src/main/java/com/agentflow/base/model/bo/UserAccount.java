@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 public class UserAccount extends BaseEntity {
     @Column(name = "full_name", nullable = false, length = 80)
     private String fullName;
-    @Column(name = "username", nullable = false, unique = true, length = 60)
+    @Column(name = "username", nullable = false, unique = true, length = 160)
     private String username;
     @Column(name = "email", nullable = false, unique = true, length = 160)
     private String email;
@@ -35,4 +35,3 @@ public class UserAccount extends BaseEntity {
     public void updatePassword(String hash) { this.passwordHash = hash; }
     public void disable() { this.active = false; }
 }
-

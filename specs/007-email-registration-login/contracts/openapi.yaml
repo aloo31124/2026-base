@@ -1,0 +1,11 @@
+openapi: 3.0.3
+info: {title: AgentFlow Email Authentication, version: 1.0.0}
+paths:
+  /api/auth/email/registrations/code:
+    post: {summary: 寄送註冊驗證碼, responses: {'200': {description: 已寄送}, '409': {description: 信箱已註冊}, '429': {description: 寄送過於頻繁}}}
+  /api/auth/email/registrations:
+    post: {summary: 驗證並註冊, responses: {'200': {description: JWT session}, '400': {description: 驗證碼或密碼政策錯誤}}}
+  /api/auth/email/password-resets/code:
+    post: {summary: 寄送密碼重設驗證碼, responses: {'200': {description: 通用成功回應}}}
+  /api/auth/email/password-resets:
+    post: {summary: 驗證並更新密碼, responses: {'200': {description: 密碼更新成功}, '400': {description: 驗證失敗}}}
