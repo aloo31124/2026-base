@@ -1,0 +1,170 @@
+installed: []
+settings:
+  auto_execute_hooks: true
+hooks:
+  before_constitution:
+  - extension: git
+    command: speckit.git.initialize
+    enabled: true
+    optional: false
+    prompt: Execute speckit.git.initialize?
+    description: Initialize Git repository before constitution setup
+    condition: null
+  before_specify:
+  # 專案政策：specify 階段不自動切 branch（enabled: false 停用，保留條目以便日後可逆）
+  - extension: git
+    command: speckit.git.feature
+    enabled: false
+    optional: false
+    prompt: Execute speckit.git.feature?
+    description: Create feature branch before specification
+    condition: null
+  before_clarify:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit outstanding changes before clarification?
+    description: Auto-commit before spec clarification
+    condition: null
+  before_plan:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit outstanding changes before planning?
+    description: Auto-commit before implementation planning
+    condition: null
+  before_tasks:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit outstanding changes before task generation?
+    description: Auto-commit before task generation
+    condition: null
+  before_implement:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit outstanding changes before implementation?
+    description: Auto-commit before implementation
+    condition: null
+  before_checklist:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit outstanding changes before checklist?
+    description: Auto-commit before checklist generation
+    condition: null
+  before_analyze:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit outstanding changes before analysis?
+    description: Auto-commit before analysis
+    condition: null
+  before_taskstoissues:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit outstanding changes before issue sync?
+    description: Auto-commit before tasks-to-issues conversion
+    condition: null
+  after_constitution:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit constitution changes?
+    description: Auto-commit after constitution update
+    condition: null
+  after_specify:
+  - extension: workflow
+    command: speckit.clarify
+    enabled: true
+    optional: false
+    prompt: 自動執行 speckit.clarify
+    description: Automatically clarify the generated specification, choose the best-fit option for each important ambiguity, and write the decisions back to the spec
+    condition: null
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit specification changes?
+    description: Auto-commit after specification
+    condition: null
+  after_clarify:
+  - extension: workflow
+    command: speckit.plan
+    enabled: true
+    optional: false
+    prompt: 自動執行 speckit.plan
+    description: Automatically build the technical implementation plan from the clarified specification and record the selected architecture decisions
+    condition: null
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit clarification changes?
+    description: Auto-commit after spec clarification
+    condition: null
+  after_plan:
+  - extension: workflow
+    command: speckit.tasks
+    enabled: true
+    optional: false
+    prompt: 自動執行 speckit.tasks
+    description: Automatically generate implementation tasks from the approved technical plan and then stop for implement confirmation
+    condition: null
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit plan changes?
+    description: Auto-commit after implementation planning
+    condition: null
+  after_tasks:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit task changes?
+    description: Auto-commit after task generation
+    condition: null
+  after_implement:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit implementation changes?
+    description: Auto-commit after implementation
+    condition: null
+  after_checklist:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit checklist changes?
+    description: Auto-commit after checklist generation
+    condition: null
+  after_analyze:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit analysis results?
+    description: Auto-commit after analysis
+    condition: null
+  after_taskstoissues:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: true
+    prompt: Commit after syncing issues?
+    description: Auto-commit after tasks-to-issues conversion
+    condition: null
