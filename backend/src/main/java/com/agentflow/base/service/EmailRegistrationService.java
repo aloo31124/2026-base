@@ -8,6 +8,7 @@ import com.agentflow.base.model.bo.EmailVerification;
 import com.agentflow.base.model.bo.EmailVerification.Purpose;
 import com.agentflow.base.model.bo.UserAccount;
 import com.agentflow.base.model.bo.UserRole;
+import com.agentflow.base.model.bo.RegistrationRecord.Method;
 import com.agentflow.base.model.dto.AuthDtos.LoginResponse;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ public class EmailRegistrationService {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService verificationService;
     private final AuthService authService;
+    private final RegistrationManagementService registrationManagementService;
 
     public EmailRegistrationService(
         UserAccountDao userAccountDao,
@@ -31,7 +33,8 @@ public class EmailRegistrationService {
         RoleDao roleDao,
         PasswordEncoder passwordEncoder,
         EmailVerificationService verificationService,
-        AuthService authService
+        AuthService authService,
+        RegistrationManagementService registrationManagementService
     ) {
         this.userAccountDao = userAccountDao;
         this.userRoleDao = userRoleDao;
@@ -39,6 +42,7 @@ public class EmailRegistrationService {
         this.passwordEncoder = passwordEncoder;
         this.verificationService = verificationService;
         this.authService = authService;
+        this.registrationManagementService = registrationManagementService;
     }
 
     /**
@@ -74,6 +78,7 @@ public class EmailRegistrationService {
         var employeeRole = roleDao.findByRoleCode(DEFAULT_ROLE)
             .orElseThrow(() -> new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "預設使用者角色尚未建立。"));
         userRoleDao.save(new UserRole(account, employeeRole));
+        registrationManagementService.recordSuccess(account, Method.EMAIL);
         verificationService.consume(verification);
         return authService.createSession(account);
     }
@@ -111,5 +116,6 @@ public class EmailRegistrationService {
         if (!password.equals(confirmPassword)) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "密碼與確認密碼不一致。");
         }
+        registrationManagementService.validatePassword(password);
     }
 }

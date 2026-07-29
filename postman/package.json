@@ -6,6 +6,7 @@
     "test": "newman run agentflow-base.postman_collection.json --reporters cli,json --reporter-json-export ../backend/build/newman-result.json",
     "test:line": "newman run line-oauth.postman_collection.json --reporters cli,json --reporter-json-export ../backend/build/newman-line-oauth-result.json",
     "test:email": "newman run email-registration-login.postman_collection.json --reporters cli,json --reporter-json-export ../backend/build/newman-email-registration-login-result.json"
+    ,"test:registration-management": "newman run registration-management.postman_collection.json --reporters cli,json --reporter-json-export ../backend/build/newman-registration-management-result.json"
   },
   "devDependencies": {
     "newman": "6.2.2"

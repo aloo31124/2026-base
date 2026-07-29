@@ -12,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -33,9 +34,12 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    ResponseEntity<ApiResponse<Void>> handleDenied(AccessDeniedException ex) {
+    ResponseEntity<ApiResponse<Void>> handleDenied(AccessDeniedException ex, HttpServletRequest request) {
         log.warn("權限不足: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("[使用者角色] [api] 無系統管理員權限。"));
+        String message = request.getRequestURI().startsWith("/api/admin/registration-management")
+            ? "[註冊登入管理] [api] 無系統管理員權限。"
+            : "[使用者角色] [api] 無系統管理員權限。";
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(message));
     }
 
     /**

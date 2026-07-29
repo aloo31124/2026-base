@@ -10,6 +10,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <aside className="sidebar"><nav>
       {session?.roles.includes('SYSTEM_ADMIN') && <NavLink to="/users">使用者分權</NavLink>}
       {session?.roles.includes('SYSTEM_ADMIN') && <NavLink to="/email-verification">信箱驗證</NavLink>}
+      {session?.roles.includes('SYSTEM_ADMIN') && <NavLink to="/registration-management">註冊登入管理</NavLink>}
       <NavLink to="/test/testTemp/">資料連線測試</NavLink>
     </nav></aside>
     <main className="app-main">{children}</main>
