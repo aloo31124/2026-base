@@ -19,6 +19,9 @@ logging:
     com.agentflow: INFO
 
 app:
+  mail:
+    mock-enabled: true
+    test-code: "123456"
   line-oauth:
     mock-enabled: true
     callback-url: http://localhost:5173/api/auth/line/callback

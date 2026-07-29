@@ -6,6 +6,8 @@ import TestPage from './pages/TestPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import LineOAuthCallbackPage from './pages/LineOAuthCallbackPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
+import EmailRegistrationPage from './pages/EmailRegistrationPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 function Guard({ children, admin = false }: { children: React.ReactNode; admin?: boolean }) {
   const session = useAppSelector(s => s.auth.session);
@@ -17,6 +19,8 @@ function Guard({ children, admin = false }: { children: React.ReactNode; admin?:
 export default function App() {
   return <Routes>
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<EmailRegistrationPage />} />
+    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/api/auth/line/callback" element={<LineOAuthCallbackPage />} />
     <Route path="/users" element={<Guard admin><UsersPage /></Guard>} />
     <Route path="/email-verification" element={<Guard admin><EmailVerificationPage /></Guard>} />

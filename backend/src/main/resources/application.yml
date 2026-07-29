@@ -51,6 +51,8 @@ app:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
   mail:
     sender: ${EMAIL_USER:}
+    mock-enabled: ${EMAIL_MOCK_ENABLED:false}
+    test-code: ${EMAIL_TEST_CODE:}
   line-oauth:
     channel-id: ${LINE_CHANNEL_ID:2009072345}
     channel-secret: ${LINE_CHANNEL_SECRET:381bb438d2c973636d712aaf6ea99909}

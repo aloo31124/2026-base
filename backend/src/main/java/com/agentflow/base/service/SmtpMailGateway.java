@@ -26,6 +26,10 @@ public class SmtpMailGateway implements MailGateway {
      */
     @Override
     public void send(MailMessage message) {
+        if (properties.mockEnabled()) {
+            // 只有明確啟用的 H2／測試環境略過外部 SMTP，正式環境預設為 false。
+            return;
+        }
         if (!StringUtils.hasText(properties.sender())) {
             throw new BusinessException(HttpStatus.SERVICE_UNAVAILABLE, "Gmail SMTP 尚未設定。");
         }

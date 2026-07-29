@@ -1,27 +1,29 @@
-# Research：Gmail SMTP 信箱驗證
+# Research：信箱註冊登入
 
 ## 目錄
 
-- [參考專案發現](#參考專案發現) — Nodemailer 與 Gmail SMTP 做法
-- [本專案決策](#本專案決策) — Spring Boot 對應實作
-- [安全考量](#安全考量) — 憑證與驗證碼
+- [驗證碼保存](#驗證碼保存) — BCrypt 與一次性狀態
+- [登入相容性](#登入相容性) — 信箱即 username
+- [寄送稽核](#寄送稽核) — 成功與失敗資料庫紀錄
+- [自動測試郵件](#自動測試郵件) — 明確隔離的 mock profile
+- [既有資料庫相容](#既有資料庫相容) — sent_at 與 status 欄位
 
-## 參考專案發現
+## 驗證碼保存
 
-- `2025-newshop` 使用 Nodemailer 的 `service: gmail` 與帳密環境變數寄送純文字驗證碼。
-- 註冊與忘記密碼共用寄信入口，但驗證碼保存在程序記憶體且沒有過期或刪除機制。
-- 本功能只採用 Gmail SMTP 與環境變數設定概念，不複製記憶體驗證碼清單、錯誤吞沒或敏感日誌行為。
+採用 BCrypt 雜湊而非明碼，保留 10 分鐘效期、5 次錯誤限制及 `PENDING → VERIFIED → COMPLETED` 狀態。驗證成功只回傳資料列 UUID 作一次性票券，Service 再驗證 email、purpose、效期與未使用狀態。
 
-## 本專案決策
+## 登入相容性
 
-- 使用 Spring Boot Starter Mail，由 `JavaMailSender` 透過 `smtp.gmail.com:587` 與 STARTTLS 寄送。
-- 使用 `MailGateway` 隔離外部 SMTP，讓 Service 單元測試與 API 整合測試不需真實 Gmail。
-- 使用 `SecureRandom` 產生 6 位數字碼；目前只放入信件，不持久化。
-- API 路徑置於 `/api/admin/**` 並以方法層 `SYSTEM_ADMIN` 權限再次保護。
+新帳號將正規化 email 同時保存於 `username` 與 `email`，因此既有 `UserDetailsService`、JWT subject 與 `/api/auth/login` 不需 breaking change；原本 `admin`、`user` 等帳號仍可登入。
 
-## 安全考量
+## 寄送稽核
 
-- `EMAIL_USER` 與 `EMAIL_PASSWORD` 只由執行環境注入。
-- API 回應只包含遮罩信箱與時間，禁止回傳驗證碼。
-- 日誌不得記錄驗證碼、完整收件信箱或 SMTP 密碼。
-- 自動測試使用 mock，不連線 Gmail。
+新增 `email_delivery_log` 保存用途、遮罩收件者、狀態與安全失敗摘要。完整 email 僅留在資料庫供內部追蹤，API 不回傳；驗證碼與 SMTP 秘密不進入紀錄。
+
+## 自動測試郵件
+
+H2 與 test profile 可明確啟用 mock SMTP 並使用固定 `123456`；正式設定 `EMAIL_MOCK_ENABLED` 預設 false、`EMAIL_TEST_CODE` 預設空白，仍使用 Gmail SMTP 與 `SecureRandom`。此設計讓 Postman/Cypress 無需真實 Gmail 秘密。
+
+## 既有資料庫相容
+
+本機既有 `email_verification` 表包含必填 `sent_at` 與 `status`。新 BO 保留並填寫兩欄，讓 Hibernate `ddl-auto:update` 可直接升級，而非破壞或刪除既有資料。

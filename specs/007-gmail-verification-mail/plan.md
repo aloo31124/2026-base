@@ -1,92 +1,91 @@
-# Implementation Plan：Gmail 信箱驗證測試
+# Implementation Plan：信箱註冊登入
 
 **Branch**：`信箱註冊-帳密登入` | **Date**：2026-07-29 | **Spec**：[spec.md](spec.md)
 
 ## 目錄
 
-- [技術樹（心智圖）](#技術樹心智圖) — 本功能使用的前後端、SMTP 與測試技術
-- [Summary](#summary) — 實作方向
-- [Technical Decision Log](#technical-decision-log) — 主要取捨
-- [Technical Context](#technical-context) — 版本與限制
-- [Constitution Check](#constitution-check) — 六項專案原則檢核
-- [Project Structure](#project-structure) — 文件與程式碼位置
-  - [Documentation](#documentation) — Feature 文件
-  - [Source Code](#source-code) — 後端、前端與測試
-- [Complexity Tracking](#complexity-tracking) — 無例外
+- [技術樹（心智圖）](#技術樹心智圖) — 前後端、資料庫、郵件與驗收工具
+- [Summary](#summary) — 分層實作方向
+- [Technical Decision Log](#technical-decision-log) — 安全與相容性取捨
+- [Technical Context](#technical-context) — 版本、儲存與限制
+- [Constitution Check](#constitution-check) — 六項專案原則
+- [Project Structure](#project-structure) — 文件、程式碼與報告位置
+  - [Documentation](#documentation) — feature 文件
+  - [Source Code](#source-code) — DB 至 React 與測試
+- [Implementation Phases](#implementation-phases) — TDD 與依賴順序
+- [Complexity Tracking](#complexity-tracking) — mock SMTP 的隔離說明
 
 ## 技術樹（心智圖）
 
 ```mermaid
 mindmap
-  root((Gmail 信箱驗證測試))
+  root((信箱註冊登入))
+    後端
+      Java 21
+      Spring Boot 4.1.0
+      Spring Data JPA
+      Spring Security
+      BCrypt
+      Spring Mail
+    資料庫
+      SQL Server 2022
+      H2 2.x 測試
+      EmailVerification
+      EmailDeliveryLog
     前端
       React 19.2.7
       TypeScript 5.9.3
       React Router 7.18.1
-    後端
-      Java 21
-      Spring Boot 4.1.0
-      Spring Mail
-      Jakarta Validation
-      Spring Security
-    外部服務
-      Gmail SMTP
-      STARTTLS 587
+      Redux Toolkit 2.11.2
     測試
       JUnit 5
-      Mockito
       MockMvc
-      Vite production build
-    安全
-      SYSTEM_ADMIN
-      環境變數
-      SecureRandom
+      Postman Newman 6.2.2
+      Cypress 15.18.1
 ```
 
 條列式 fallback（與上方 Mermaid 內容同步）：
 
-- 根：Gmail 信箱驗證測試
-  - 前端：React 19.2.7、TypeScript 5.9.3、React Router 7.18.1
-  - 後端：Java 21、Spring Boot 4.1.0、Spring Mail、Jakarta Validation、Spring Security
-  - 外部服務：Gmail SMTP、STARTTLS 587
-  - 測試：JUnit 5、Mockito、MockMvc、Vite production build
-  - 安全：SYSTEM_ADMIN、環境變數、SecureRandom
+- 根：信箱註冊登入
+  - 後端：Java 21、Spring Boot 4.1.0、Spring Data JPA、Spring Security、BCrypt、Spring Mail
+  - 資料庫：SQL Server 2022、H2 2.x 測試、EmailVerification、EmailDeliveryLog
+  - 前端：React 19.2.7、TypeScript 5.9.3、React Router 7.18.1、Redux Toolkit 2.11.2
+  - 測試：JUnit 5、MockMvc、Postman Newman 6.2.2、Cypress 15.18.1
 
 ## Summary
 
-新增管理員專用 React 頁面與 `/api/admin/email-verification/send` API。Controller 只處理驗證與回應；Service 產生驗證碼、組合信件與遮罩回應；MailGateway 封裝 Spring Mail 的 Gmail SMTP 寄送。帳密由環境變數注入，測試以 mock gateway 隔離外部 Gmail。
+沿用管理員 `/api/admin/email-verification/send`，新增寄送紀錄查詢；公開驗證流程使用 `/api/auth/email/**`。`EmailVerification` 保存 BCrypt 驗證碼雜湊與一次性票券狀態，`EmailDeliveryLog` 保存寄送稽核。`EmailVerificationService` 處理寄碼／核銷，`EmailRegistrationService` 處理建帳／重設，Controller 僅驗證輸入與包裝 `ApiResponse`。React 新增註冊與忘記密碼分步頁面，登入頁加入入口並維持 LINE OAuth 與原帳號登入。
 
 ## Technical Decision Log
 
-| 決策面向 | 評估方案 | 採用方案 | 採用理由 |
-|----------|----------|----------|----------|
-| SMTP 整合 | Jakarta Mail 原生 API、Spring Mail | Spring Mail | 符合現有 Spring Boot 框架，設定與測試替換成本最低 |
-| 寄信抽象 | Service 直接呼叫 JavaMailSender、MailGateway 介面 | MailGateway 介面 | 外部 I/O 可在單元與整合測試中可靠替換 |
-| 驗證碼狀態 | 記憶體、資料庫、不保存 | 不保存 | 目前只驗證寄送能力，避免超出需求 |
-| 前端狀態 | Redux slice、頁面本地狀態 | 頁面本地狀態 | 只有單頁單次操作，不需要全域狀態 |
-| 測試策略 | 真實 Gmail、mock SMTP gateway | mock SMTP gateway | 自動測試不依賴網路、配額與真實秘密 |
-| 部署設定 | 明碼設定、環境變數 | 環境變數 | 避免敏感值進入版本庫 |
+| 決策面向 | 評估方案 | 採用方案 | 理由 |
+|---|---|---|---|
+| 驗證碼儲存 | 明碼、單向雜湊 | BCrypt 單向雜湊 | 避免資料庫外洩直接取得驗證碼 |
+| 核銷狀態 | 記憶體、資料庫 | JPA 資料庫 | 支援多執行個體、重啟及交易一致性 |
+| 驗證與建帳 | 單一請求、一次性票券 | 分步票券 | 符合頁面流程且避免重複驗證 |
+| 登入識別 | 新增 email 分支、username=email | username=email | 最少修改並保持既有登入相容 |
+| 新帳號角色 | 無角色、EMPLOYEE | EMPLOYEE | 符合既有授權模型及最小權限 |
+| E2E 郵件 | 真 Gmail、明確 mock profile | mock profile | 無秘密、無網路與配額依賴，正式預設關閉 |
 
 ## Technical Context
 
-**Language/Version**：Java 21、TypeScript 5.9.3  
-**Primary Dependencies**：Spring Boot 4.1.0、Spring Mail、React 19.2.7  
-**Storage**：不新增資料表  
-**Testing**：JUnit 5、Mockito、MockMvc、TypeScript/Vite build  
-**Target Platform**：Spring Boot Web API 與 React SPA  
-**Project Type**：前後端分離 Web Application  
-**Performance Goals**：管理員送出後 30 秒內取得成功或失敗結果  
-**Constraints**：Gmail SMTP 配額與網路可用性；API 不回傳驗證碼  
-**Scale/Scope**：管理員低頻人工測試，不建立大量寄送系統
+**Language/Version**：Java 21、TypeScript 5.9.3
+**Primary Dependencies**：Spring Boot 4.1.0、Spring Data JPA、Spring Security、Spring Mail、React 19.2.7
+**Storage**：SQL Server 2022；測試與本機驗收使用 H2 MSSQLServer mode
+**Testing**：JUnit 5、MockMvc、Newman 6.2.2、Cypress 15.18.1
+**Target Platform**：Spring Boot REST API 與 React SPA
+**Constraints**：驗證碼不得回傳；SMTP mock 只可在明確設定後啟用；既有 API 不可破壞
+**Performance Goals**：本機 API 核心流程每步 2 秒內完成，真實 SMTP 受 Gmail 網路影響
+**Scale/Scope**：MVP 帳號驗證，不包含寄信佇列、行銷郵件或管理員密碼政策
 
 ## Constitution Check
 
-- [x] Controller、Service、外部寄信 gateway 職責分離。
-- [x] 新增服務單元測試及 API 整合測試。
-- [x] 僅實作寄信測試 MVP，不建立未要求的驗證碼持久化。
-- [x] 優先確保 Gmail 寄信、權限與錯誤回饋正確。
-- [x] 只新增 API 與頁面，不變更既有 API 行為。
-- [x] 新增方法與主要處理段落使用繁體中文註解。
+- [x] Controller 僅處理 HTTP；Service 負責業務；JPA DAO 只負責持久化。
+- [x] 先建立服務與整合測試，再完成實作，涵蓋錯誤與邊界。
+- [x] 只處理 Sheet「預計開發」六條 MUST，不擴張到管理員密碼政策或 LINE OAuth。
+- [x] 重複信箱、一次性票券及密碼更新以業務正確性為優先。
+- [x] 保留既有管理員寄信、帳號登入與 LINE OAuth API。
+- [x] 新增方法與主要段落使用繁體中文註解。
 
 ## Project Structure
 
@@ -108,27 +107,41 @@ specs/007-gmail-verification-mail/
 ### Source Code
 
 ```text
-backend/
-├── build.gradle
-└── src/
-    ├── main/java/com/agentflow/base/
-    │   ├── config/MailProperties.java
-    │   ├── controller/EmailVerificationController.java
-    │   ├── model/dto/EmailVerificationDtos.java
-    │   └── service/
-    │       ├── EmailVerificationService.java
-    │       ├── MailGateway.java
-    │       └── SmtpMailGateway.java
-    └── test/java/com/agentflow/base/
-        ├── EmailVerificationIntegrationTest.java
-        └── service/EmailVerificationServiceTest.java
+backend/src/main/java/com/agentflow/base/
+├── model/bo/EmailVerification.java
+├── model/bo/EmailDeliveryLog.java
+├── dao/EmailVerificationDao.java
+├── dao/EmailDeliveryLogDao.java
+├── service/EmailDeliveryLogService.java
+├── service/EmailVerificationService.java
+├── service/EmailRegistrationService.java
+├── controller/EmailVerificationController.java
+├── controller/EmailAuthController.java
+└── model/dto/EmailVerificationDtos.java
 frontend/src/
-├── App.tsx
-├── components/AppShell.tsx
+├── pages/EmailRegistrationPage.tsx
+├── pages/ForgotPasswordPage.tsx
+├── pages/LoginPage.tsx
 ├── pages/EmailVerificationPage.tsx
+├── App.tsx
 └── styles.css
+frontend/cypress/e2e/email-registration-login.cy.ts
+postman/email-registration-login.postman_collection.json
+report/test/result-20260729-email-registration-login-postman.md
+report/test/result-20260729-email-registration-login-cypress.md
 ```
+
+## Implementation Phases
+
+1. 先寫 JUnit/MockMvc 合約測試，使完整流程呈紅燈。
+2. 建立 `EmailVerification`、`EmailDeliveryLog` BO 與 JPA DAO。
+3. 完成寄送紀錄、驗證碼、註冊／重設 Service，再接 Controller。
+4. 更新 React 路由、分步頁面、登入入口與管理員紀錄清單。
+5. 建立 Postman collection 與 Cypress 規格，啟動 H2 mock SMTP 環境跑到綠燈。
+6. 產出測試報告，逐條勾選 tasks/checklist 並核對 FR。
 
 ## Complexity Tracking
 
-無憲法例外或額外複雜度。
+| 例外 | 為何需要 | 簡化方案不足原因 |
+|---|---|---|
+| H2 profile 可啟用 mock SMTP 與固定測試碼 | Cypress 需可重現地完成信箱驗證 | 真實 Gmail 需要秘密、網路與人工取信，不適合自動驗收；正式環境預設關閉 |

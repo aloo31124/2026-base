@@ -1,37 +1,42 @@
-# Requirements Checklist：Gmail 信箱驗證測試
+# Requirements Checklist：信箱註冊登入
 
 ## 目錄
 
-- [內容品質](#內容品質) — 共 4 項
-- [需求完整性](#需求完整性) — 共 8 項
-- [功能就緒度](#功能就緒度) — 共 4 項
-- [Notes](#notes) — 檢核結論
+- [規格品質](#規格品質) — 4 項
+- [Sheet MUST 覆蓋](#sheet-must-覆蓋) — 6 項
+- [分層與安全](#分層與安全) — 5 項
+- [建置與測試驗收](#建置與測試驗收) — 7 項
 
-## 內容品質
+## 規格品質
 
-- [x] 規格聚焦管理員寄信測試的使用者價值。
-- [x] User Stories 使用非技術語言描述。
-- [x] 所有必要章節均已完成。
-- [x] 實作細節只存在於明確的外部服務約束，不混入成功標準。
+- [x] CQ-001 規格聚焦使用者價值，實作細節集中於 plan 與 data model。
+- [x] CQ-002 無 `[NEEDS CLARIFICATION]`、TODO 或未定義名詞。
+- [x] CQ-003 每條 FR 可測試且 Success Criteria 可量測。
+- [x] CQ-004 範圍明確排除非「預計開發」項目與 LINE OAuth。
 
-## 需求完整性
+## Sheet MUST 覆蓋
 
-- [x] 無 `[NEEDS CLARIFICATION]` 標記。
-- [x] 每條需求均可獨立測試且無歧義。
-- [x] 成功標準可量測且以使用者結果為主。
-- [x] 管理員與一般使用者的權限邊界明確。
-- [x] 有效、無效與外部服務失敗邊界已定義。
-- [x] 驗證碼格式、效期告知與不保存範圍已定義。
-- [x] 敏感設定與驗證碼不得洩漏的安全要求已定義。
-- [x] 外部 Gmail SMTP 依賴與假設已定義。
+- [x] CK-001 管理員 SMTP 測試寄信成功／失敗均保存資料庫，頁面可檢視紀錄。
+- [x] CK-002 首次信箱可寄送並核銷驗證碼，重複信箱顯示提醒。
+- [x] CK-003 驗證通過後可設定密碼與確認密碼，建帳後立即進入首頁。
+- [x] CK-004 新帳號可使用信箱作為帳號及密碼登入。
+- [x] CK-005 忘記密碼可透過信箱驗證後更新密碼。
+- [x] CK-006 六條 MUST 均有 task、JUnit/API 與 Cypress 驗收證據。
 
-## 功能就緒度
+## 分層與安全
 
-- [x] 三條 User Story 均有 Acceptance Scenarios。
-- [x] FR-001 至 FR-010 均有明確驗收方式。
-- [x] SC-001 至 SC-004 均可由操作或建置驗證。
-- [x] MVP 範圍明確排除驗證碼核銷與帳號流程。
+- [x] CK-007 DB 表、BO、JPA DAO、Service、Controller、React Page 皆已實作。
+- [x] CK-008 Controller 無直接存取 DAO，業務規則集中 Service。
+- [x] CK-009 驗證碼僅保存雜湊，有 10 分鐘效期、5 次限制與一次性使用。
+- [x] CK-010 新註冊帳號只取得 `EMPLOYEE`，管理員寄信與紀錄 API 維持 `SYSTEM_ADMIN`。
+- [x] CK-011 API、應用程式日誌及前端不洩漏驗證碼、明文密碼、雜湊或 SMTP 秘密。
 
-## Notes
+## 建置與測試驗收
 
-全部 16 項通過，可進入技術規劃與實作。
+- [x] CK-012 後端 `./gradlew test` 全數通過。
+- [x] CK-013 後端 `./gradlew build` 建置成功。
+- [x] CK-014 前端 `npm run build` 建置成功。
+- [x] CK-015 Postman/Newman collection 全數通過並產生完成率報告。
+- [x] CK-016 Cypress `email-registration-login.cy.ts` 全數通過並產生完成率報告。
+- [x] CK-017 tasks.md 無未完成項目，FR↔task 覆蓋率 100%。
+- [x] CK-018 Google Sheet 六列狀態於全部驗收成功後更新為「開發完成」。
