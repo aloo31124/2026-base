@@ -11,6 +11,7 @@ import com.agentflow.base.model.bo.LineOAuthAccount;
 import com.agentflow.base.model.bo.LineOAuthAttempt;
 import com.agentflow.base.model.bo.UserAccount;
 import com.agentflow.base.model.bo.UserRole;
+import com.agentflow.base.model.bo.RegistrationRecord.Method;
 import com.agentflow.base.model.dto.AuthDtos.LoginResponse;
 import com.agentflow.base.model.dto.LineOAuthDtos.AuthorizeResponse;
 import com.agentflow.base.model.dto.LineOAuthDtos.CallbackRequest;
@@ -44,6 +45,7 @@ public class LineOAuthService {
     private final RoleDao roleDao;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RegistrationManagementService registrationManagementService;
 
     public LineOAuthService(
         LineOAuthClient client,
@@ -54,7 +56,8 @@ public class LineOAuthService {
         UserRoleDao userRoleDao,
         RoleDao roleDao,
         PasswordEncoder passwordEncoder,
-        JwtService jwtService
+        JwtService jwtService,
+        RegistrationManagementService registrationManagementService
     ) {
         this.client = client;
         this.properties = properties;
@@ -65,6 +68,7 @@ public class LineOAuthService {
         this.roleDao = roleDao;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.registrationManagementService = registrationManagementService;
     }
 
     @Transactional
@@ -145,6 +149,7 @@ public class LineOAuthService {
         var employee = roleDao.findByRoleCode("EMPLOYEE")
             .orElseThrow(() -> new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "系統缺少 EMPLOYEE 角色設定。"));
         userRoleDao.save(new UserRole(user, employee));
+        registrationManagementService.recordSuccess(user, Method.LINE);
         log.info("已建立 LINE OAuth 首次註冊帳號 {}", username);
         return user;
     }

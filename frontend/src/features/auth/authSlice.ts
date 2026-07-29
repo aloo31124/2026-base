@@ -31,6 +31,7 @@ const slice = createSlice({
   reducers: {
     logout(state) { state.session = null; localStorage.removeItem('session'); localStorage.removeItem('token'); },
     clearAuthError(state) { state.error = undefined; if (state.status === 'failed') state.status = 'idle'; },
+    acceptSession(state, action: PayloadAction<Session>) { saveSession(state, action.payload); },
   },
   extraReducers: (builder) => builder
     .addCase(login.pending, (state) => { state.status = 'loading'; state.error = undefined; })
@@ -43,5 +44,5 @@ const slice = createSlice({
     .addCase(completeLineLogin.fulfilled, (state, action: PayloadAction<Session>) => saveSession(state, action.payload))
     .addCase(completeLineLogin.rejected, (state, action) => { state.status = 'failed'; state.error = action.error.message; }),
 });
-export const { logout, clearAuthError } = slice.actions;
+export const { logout, clearAuthError, acceptSession } = slice.actions;
 export default slice.reducer;

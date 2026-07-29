@@ -64,6 +64,13 @@ function Invoke-Sql {
     & $exe @rest -S $Server @authArgs -b -d $Database -Q $Query
 }
 
+function Invoke-SqlFile {
+    param([string]$Database, [string]$File)
+    $exe = $sqlcmdPrefix[0]
+    $rest = @($sqlcmdPrefix[1..($sqlcmdPrefix.Count - 1)])
+    Get-Content -Raw $File | & $exe @rest -S $Server @authArgs -b -d $Database
+}
+
 # SQL Server 冷啟動需數十秒才接受連線，先等到就緒再下 DDL
 Write-Host "等待 SQL Server ($Server) 就緒..."
 $deadline = (Get-Date).AddSeconds($ReadyTimeoutSeconds)
@@ -85,5 +92,8 @@ if ($LASTEXITCODE -ne 0) { throw '建立 Database 或 Login 失敗。' }
 
 Invoke-Sql -Database $DatabaseName -Query "IF USER_ID(N'$login') IS NULL CREATE USER [$login] FOR LOGIN [$login]; IF IS_ROLEMEMBER(N'db_owner', N'$login') <> 1 ALTER ROLE [db_owner] ADD MEMBER [$login]; SELECT DB_NAME() AS database_name, N'$login' AS login_name, N'初始化完成' AS result;"
 if ($LASTEXITCODE -ne 0) { throw '建立 Database User 或 db_owner 關聯失敗。' }
+
+Invoke-SqlFile -Database $DatabaseName -File (Join-Path $PSScriptRoot 'migrate-company-supervisor-unicode.sql')
+if ($LASTEXITCODE -ne 0) { throw '公司主管 Unicode 欄位遷移失敗。' }
 
 Write-Host "資料庫 [$DatabaseName] 與專用 Login [$LoginName] 初始化完成。"

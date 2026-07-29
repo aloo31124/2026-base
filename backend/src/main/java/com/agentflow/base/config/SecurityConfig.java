@@ -25,7 +25,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@EnableConfigurationProperties(LineOAuthProperties.class)
+@EnableConfigurationProperties({LineOAuthProperties.class, MailProperties.class})
 public class SecurityConfig {
     @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
     @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception { return configuration.getAuthenticationManager(); }
@@ -40,13 +40,31 @@ public class SecurityConfig {
                 .anyRequest().authenticated())
             .exceptionHandling(errors -> errors
                 .authenticationEntryPoint((req, res, ex) -> writeError(res, mapper, HttpStatus.UNAUTHORIZED, "尚未登入或 JWT 已失效。"))
-                .accessDeniedHandler((req, res, ex) -> writeError(res, mapper, HttpStatus.FORBIDDEN, "[使用者角色] [api] 無系統管理員權限。")))
+                .accessDeniedHandler((req, res, ex) -> writeError(
+                    res,
+                    mapper,
+                    HttpStatus.FORBIDDEN,
+                    accessDeniedMessage(req.getRequestURI())
+                )))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class).build();
     }
 
     private void writeError(jakarta.servlet.http.HttpServletResponse response, ObjectMapper mapper, HttpStatus status, String message) throws java.io.IOException {
         response.setStatus(status.value()); response.setContentType(MediaType.APPLICATION_JSON_VALUE); response.setCharacterEncoding("UTF-8");
         mapper.writeValue(response.getWriter(), ApiResponse.error(message));
+    }
+
+    /**
+     * 依管理 API 路徑提供可追溯的模組權限錯誤訊息。
+     */
+    private String accessDeniedMessage(String requestUri) {
+        if (requestUri.startsWith("/api/admin/company-supervisor-management")) {
+            return "[公司主管管理] [api] 無系統管理員權限。";
+        }
+        if (requestUri.startsWith("/api/admin/registration-management")) {
+            return "[註冊登入管理] [api] 無系統管理員權限。";
+        }
+        return "[使用者角色] [api] 無系統管理員權限。";
     }
 
     @Bean CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origin}") String origin) {

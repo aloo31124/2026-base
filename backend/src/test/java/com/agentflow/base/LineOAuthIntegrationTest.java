@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.agentflow.base.dao.LineOAuthAccountDao;
 import com.agentflow.base.dao.LineOAuthAttemptDao;
 import com.agentflow.base.dao.UserAccountDao;
+import com.agentflow.base.dao.RegistrationRecordDao;
 import com.agentflow.base.model.bo.LineOAuthAttempt;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -36,12 +37,14 @@ class LineOAuthIntegrationTest {
     @Autowired UserAccountDao userDao;
     @Autowired LineOAuthAccountDao accountDao;
     @Autowired LineOAuthAttemptDao attemptDao;
+    @Autowired RegistrationRecordDao registrationRecordDao;
 
     @Test
     void firstLoginRegistersAndSecondLoginReusesSameUser() throws Exception {
         long usersBefore = userDao.count();
         long accountsBefore = accountDao.count();
         long successBefore = attemptDao.countByStatus(LineOAuthAttempt.Status.SUCCESS);
+        long registrationRecordsBefore = registrationRecordDao.count();
 
         String firstState = authorizeState();
         JsonNode first = callback("line-junit-user", firstState)
@@ -59,6 +62,7 @@ class LineOAuthIntegrationTest {
         org.assertj.core.api.Assertions.assertThat(userDao.count()).isEqualTo(usersBefore + 1);
         org.assertj.core.api.Assertions.assertThat(accountDao.count()).isEqualTo(accountsBefore + 1);
         org.assertj.core.api.Assertions.assertThat(attemptDao.countByStatus(LineOAuthAttempt.Status.SUCCESS)).isEqualTo(successBefore + 2);
+        org.assertj.core.api.Assertions.assertThat(registrationRecordDao.count()).isEqualTo(registrationRecordsBefore + 1);
     }
 
     @Test

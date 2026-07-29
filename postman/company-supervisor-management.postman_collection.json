@@ -1,0 +1,262 @@
+{
+  "info": {
+    "_postman_id": "1b88ae06-3c72-4e08-b1f3-009000000001",
+    "name": "AgentFlow 公司主管管理",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "adminToken", "value": "" },
+    { "key": "userToken", "value": "" },
+    { "key": "suffix", "value": "" },
+    { "key": "companyAName", "value": "" },
+    { "key": "companyBName", "value": "" },
+    { "key": "companyAId", "value": "" },
+    { "key": "companyBId", "value": "" },
+    { "key": "user1Id", "value": "" },
+    { "key": "user2Id", "value": "" },
+    { "key": "user1Name", "value": "" },
+    { "key": "supervisor1Id", "value": "" },
+    { "key": "supervisor2Id", "value": "" },
+    { "key": "binding1Id", "value": "" },
+    { "key": "binding2Id", "value": "" },
+    { "key": "movedBindingId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 管理員登入",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const suffix = Date.now().toString();",
+              "pm.collectionVariables.set('suffix', suffix);",
+              "pm.collectionVariables.set('companyAName', `Postman甲公司-${suffix}`);",
+              "pm.collectionVariables.set('companyBName', `Postman乙公司-${suffix}`);",
+              "pm.collectionVariables.set('user1Name', `Postman主管甲-${suffix}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('管理員登入 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('管理員角色正確', () => pm.expect(body.data.roles).to.include('SYSTEM_ADMIN'));",
+              "pm.collectionVariables.set('adminToken', body.data.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "02 一般使用者登入",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('一般使用者登入 200', () => pm.response.to.have.status(200));",
+        "pm.collectionVariables.set('userToken', pm.response.json().data.token);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"username\":\"user\",\"password\":\"admin123\"}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "03 一般使用者禁止查詢公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('權限不足 403', () => pm.response.to.have.status(403));",
+        "pm.test('模組訊息正確', () => pm.expect(pm.response.json().message).to.eql('[公司主管管理] [api] 無系統管理員權限。'));"
+      ] } }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/companies", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "companies"] }
+      }
+    },
+    {
+      "name": "04 建立甲公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('建立甲公司 200', () => pm.response.to.have.status(200));",
+        "var companyAResponse = pm.response.json().data;",
+        "pm.test('甲公司 response 正確', () => { pm.expect(companyAResponse.name).to.eql(pm.collectionVariables.get('companyAName')); pm.expect(companyAResponse.description).to.eql('Postman 公司 A'); });",
+        "pm.collectionVariables.set('companyAId', companyAResponse.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"name\":\"{{companyAName}}\",\"description\":\"Postman 公司 A\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/companies", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "companies"] }
+      }
+    },
+    {
+      "name": "05 建立乙公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('建立乙公司 200', () => pm.response.to.have.status(200));",
+        "var companyBResponse = pm.response.json().data;",
+        "pm.test('乙公司名稱正確', () => pm.expect(companyBResponse.name).to.eql(pm.collectionVariables.get('companyBName')));",
+        "pm.collectionVariables.set('companyBId', companyBResponse.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"name\":\"{{companyBName}}\",\"description\":\"Postman 公司 B\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/companies", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "companies"] }
+      }
+    },
+    {
+      "name": "06 建立第一位註冊使用者",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('建立第一位使用者 200', () => pm.response.to.have.status(200));",
+        "var userResponse = pm.response.json().data;",
+        "pm.test('使用者預設為員工', () => pm.expect(userResponse.roles).to.include('EMPLOYEE'));",
+        "pm.collectionVariables.set('user1Id', userResponse.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"fullName\":\"{{user1Name}}\",\"username\":\"postman.manager.a.{{suffix}}\",\"email\":\"postman.manager.a.{{suffix}}@example.com\",\"password\":\"password123\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"] }
+      }
+    },
+    {
+      "name": "07 建立第二位註冊使用者",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('建立第二位使用者 200', () => pm.response.to.have.status(200));",
+        "pm.collectionVariables.set('user2Id', pm.response.json().data.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"fullName\":\"Postman主管乙-{{suffix}}\",\"username\":\"postman.manager.b.{{suffix}}\",\"email\":\"postman.manager.b.{{suffix}}@example.com\",\"password\":\"password123\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"] }
+      }
+    },
+    {
+      "name": "08 建立第一位主管",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('建立第一位主管 200', () => pm.response.to.have.status(200));",
+        "var supervisorResponse = pm.response.json().data;",
+        "pm.test('主管 response 綁定既有使用者', () => { pm.expect(supervisorResponse.userId).to.eql(pm.collectionVariables.get('user1Id')); pm.expect(supervisorResponse.title).to.eql('營運主管'); });",
+        "pm.collectionVariables.set('supervisor1Id', supervisorResponse.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"userId\":\"{{user1Id}}\",\"title\":\"營運主管\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/supervisors", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "supervisors"] }
+      }
+    },
+    {
+      "name": "09 建立第二位主管",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('建立第二位主管 200', () => pm.response.to.have.status(200));",
+        "pm.collectionVariables.set('supervisor2Id', pm.response.json().data.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"userId\":\"{{user2Id}}\",\"title\":\"專案主管\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/supervisors", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "supervisors"] }
+      }
+    },
+    {
+      "name": "10 第一位主管綁定甲公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('第一位主管綁定 200', () => pm.response.to.have.status(200));",
+        "var bindingResponse = pm.response.json().data;",
+        "pm.test('綁定 response 值正確', () => { pm.expect(bindingResponse.companyId).to.eql(pm.collectionVariables.get('companyAId')); pm.expect(bindingResponse.supervisorId).to.eql(pm.collectionVariables.get('supervisor1Id')); });",
+        "pm.collectionVariables.set('binding1Id', bindingResponse.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyAId}}\",\"supervisorId\":\"{{supervisor1Id}}\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "bindings"] }
+      }
+    },
+    {
+      "name": "11 第二位主管也綁定甲公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('同公司第二位主管 200', () => pm.response.to.have.status(200));",
+        "pm.test('同公司可多主管', () => pm.expect(pm.response.json().data.companyId).to.eql(pm.collectionVariables.get('companyAId')));",
+        "pm.collectionVariables.set('binding2Id', pm.response.json().data.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyAId}}\",\"supervisorId\":\"{{supervisor2Id}}\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "bindings"] }
+      }
+    },
+    {
+      "name": "12 依公司與主管名稱查詢綁定",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('綁定查詢 200', () => pm.response.to.have.status(200));",
+        "const rows = pm.response.json().data;",
+        "pm.test('雙條件只命中第一位主管', () => { pm.expect(rows).to.have.lengthOf(1); pm.expect(rows[0].companyName).to.eql(pm.collectionVariables.get('companyAName')); pm.expect(rows[0].supervisorName).to.eql(pm.collectionVariables.get('user1Name')); });"
+      ] } }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings?companyName={{companyAName}}&supervisorName={{user1Name}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "company-supervisor-management", "bindings"],
+          "query": [
+            { "key": "companyName", "value": "{{companyAName}}" },
+            { "key": "supervisorName", "value": "{{user1Name}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "13 同主管禁止綁定第二家公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('一人第二家公司 409', () => pm.response.to.have.status(409));",
+        "pm.test('衝突訊息正確', () => pm.expect(pm.response.json().message).to.include('已綁定公司'));"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyBId}}\",\"supervisorId\":\"{{supervisor1Id}}\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "bindings"] }
+      }
+    },
+    {
+      "name": "14 取消第一位主管綁定",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('取消綁定 200', () => pm.response.to.have.status(200));",
+        "pm.test('取消 response data 為 null', () => pm.expect(pm.response.json().data).to.eql(null));"
+      ] } }],
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings/{{binding1Id}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "bindings", "{{binding1Id}}"] }
+      }
+    },
+    {
+      "name": "15 取消後改綁乙公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('取消後改綁 200', () => pm.response.to.have.status(200));",
+        "var movedBindingResponse = pm.response.json().data;",
+        "pm.test('新公司 response 正確', () => pm.expect(movedBindingResponse.companyId).to.eql(pm.collectionVariables.get('companyBId')));",
+        "pm.collectionVariables.set('movedBindingId', movedBindingResponse.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyBId}}\",\"supervisorId\":\"{{supervisor1Id}}\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "bindings"] }
+      }
+    }
+  ]
+}

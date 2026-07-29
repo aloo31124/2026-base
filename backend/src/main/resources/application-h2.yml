@@ -15,3 +15,8 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+
+app:
+  mail:
+    mock-enabled: ${EMAIL_MOCK_ENABLED:true}
+    test-code: ${EMAIL_TEST_CODE:123456}

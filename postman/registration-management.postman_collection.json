@@ -1,0 +1,144 @@
+{
+  "info": {
+    "_postman_id": "7bf29f53-93c7-40d1-97a5-6bd46a0246dc",
+    "name": "AgentFlow 註冊登入管理",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "adminToken", "value": "" },
+    { "key": "userToken", "value": "" },
+    { "key": "email", "value": "" },
+    { "key": "ticket", "value": "" },
+    { "key": "verificationCode", "value": "123456" }
+  ],
+  "item": [
+    {
+      "name": "01 管理員登入",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('管理員登入 200', () => pm.response.to.have.status(200));",
+        "pm.collectionVariables.set('adminToken', pm.response.json().data.token);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+      }
+    },
+    {
+      "name": "02 讀取密碼政策",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('政策查詢 200', () => pm.response.to.have.status(200));",
+        "pm.test('政策欄位完整', () => { const data = pm.response.json().data; pm.expect(data).to.have.keys('minLength','requireLetter','requireNumber','updatedAt'); });"
+      ]}}],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/registration-management/policy", "host": ["{{baseUrl}}"], "path": ["api","admin","registration-management","policy"] }
+      }
+    },
+    {
+      "name": "03 更新密碼政策",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('政策更新 200', () => pm.response.to.have.status(200));",
+        "pm.test('更新值正確', () => { const data = pm.response.json().data; pm.expect(data.minLength).to.eql(10); pm.expect(data.requireLetter).to.eql(true); pm.expect(data.requireNumber).to.eql(true); });"
+      ]}}],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"minLength\":10,\"requireLetter\":true,\"requireNumber\":true}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/registration-management/policy", "host": ["{{baseUrl}}"], "path": ["api","admin","registration-management","policy"] }
+      }
+    },
+    {
+      "name": "04 一般使用者登入",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('一般使用者登入 200', () => pm.response.to.have.status(200));",
+        "pm.collectionVariables.set('userToken', pm.response.json().data.token);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"username\":\"user\",\"password\":\"admin123\"}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+      }
+    },
+    {
+      "name": "05 一般使用者禁止讀取政策",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('權限不足 403', () => pm.response.to.have.status(403));",
+        "pm.test('模組訊息正確', () => pm.expect(pm.response.json().message).to.eql('[註冊登入管理] [api] 無系統管理員權限。'));"
+      ]}}],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/registration-management/policy", "host": ["{{baseUrl}}"], "path": ["api","admin","registration-management","policy"] }
+      }
+    },
+    {
+      "name": "06 寄送信箱註冊碼",
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["pm.collectionVariables.set('email', `registration.management.${Date.now()}@example.com`);"] }},
+        { "listen": "test", "script": { "exec": ["pm.test('寄送註冊碼 200', () => pm.response.to.have.status(200));"] }}
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"{{email}}\"}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/email/registration-code", "host": ["{{baseUrl}}"], "path": ["api","auth","email","registration-code"] }
+      }
+    },
+    {
+      "name": "07 核銷信箱註冊碼",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('核銷註冊碼 200', () => pm.response.to.have.status(200));",
+        "pm.collectionVariables.set('ticket', pm.response.json().data.ticketId);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"{{email}}\",\"code\":\"{{verificationCode}}\",\"purpose\":\"REGISTRATION\"}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/email/verify", "host": ["{{baseUrl}}"], "path": ["api","auth","email","verify"] }
+      }
+    },
+    {
+      "name": "08 弱密碼被政策拒絕",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('弱密碼 400', () => pm.response.to.have.status(400));",
+        "pm.test('列出缺少條件', () => pm.expect(pm.response.json().message).to.include('至少 10 位').and.include('至少一個數字'));"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"{{email}}\",\"ticketId\":\"{{ticket}}\",\"password\":\"abcdefgh\",\"confirmPassword\":\"abcdefgh\"}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/email/register", "host": ["{{baseUrl}}"], "path": ["api","auth","email","register"] }
+      }
+    },
+    {
+      "name": "09 符合政策完成註冊",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('符合政策註冊 200', () => pm.response.to.have.status(200));"] }}],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"{{email}}\",\"ticketId\":\"{{ticket}}\",\"password\":\"abcdefgh12\",\"confirmPassword\":\"abcdefgh12\"}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/email/register", "host": ["{{baseUrl}}"], "path": ["api","auth","email","register"] }
+      }
+    },
+    {
+      "name": "10 查詢信箱註冊紀錄",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('註冊紀錄查詢 200', () => pm.response.to.have.status(200));",
+        "pm.test('可找到成功信箱註冊', () => { const email = pm.collectionVariables.get('email'); const row = pm.response.json().data.find(item => item.identifier === email); pm.expect(row).to.exist; pm.expect(row.method).to.eql('EMAIL'); pm.expect(row.success).to.eql(true); });"
+      ]}}],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/registration-management/registrations", "host": ["{{baseUrl}}"], "path": ["api","admin","registration-management","registrations"] }
+      }
+    }
+  ]
+}

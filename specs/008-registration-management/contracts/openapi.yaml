@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info:
+  title: 註冊登入管理 API
+  version: 1.0.0
+paths:
+  /api/admin/registration-management/policy:
+    get:
+      summary: 取得密碼政策
+      responses:
+        "200": { description: 成功 }
+        "403": { description: 無系統管理員權限 }
+    put:
+      summary: 更新密碼政策
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [minLength, requireLetter, requireNumber]
+              properties:
+                minLength: { type: integer, minimum: 8, maximum: 72 }
+                requireLetter: { type: boolean }
+                requireNumber: { type: boolean }
+      responses:
+        "200": { description: 更新成功 }
+        "400": { description: 輸入不合法 }
+        "403": { description: 無系統管理員權限 }
+  /api/admin/registration-management/registrations:
+    get:
+      summary: 取得最近註冊紀錄
+      responses:
+        "200": { description: 成功 }
+        "403": { description: 無系統管理員權限 }

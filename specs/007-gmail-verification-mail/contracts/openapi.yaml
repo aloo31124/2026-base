@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info:
+  title: AgentFlow 信箱註冊登入 API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/auth/email/registration-code:
+    post:
+      summary: 首次信箱寄送註冊驗證碼
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '200':
+          description: 驗證碼已寄送
+        '409':
+          description: 此信箱已註冊
+  /api/auth/email/password-reset-code:
+    post:
+      summary: 既有信箱寄送密碼重設驗證碼
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '200':
+          description: 驗證碼已寄送
+        '404':
+          description: 查無此信箱帳號
+  /api/auth/email/verify:
+    post:
+      summary: 核銷六位數驗證碼
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: 回傳一次性票券
+  /api/auth/email/register:
+    post:
+      summary: 使用有效票券完成信箱註冊並自動登入
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+      responses:
+        '200':
+          description: 回傳 JWT 登入工作階段
+  /api/auth/email/password-reset:
+    post:
+      summary: 使用有效票券更新密碼
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+      responses:
+        '200':
+          description: 密碼已更新
+  /api/admin/email-verification/send:
+    post:
+      summary: 管理員寄送 SMTP 測試信
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 測試信已寄送並保存紀錄
+        '403':
+          description: 無系統管理員權限
+  /api/admin/email-verification/logs:
+    get:
+      summary: 管理員取得最近二十筆寄送紀錄
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 遮罩後的寄送紀錄
+        '403':
+          description: 無系統管理員權限
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    EmailRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 160
+    VerifyRequest:
+      allOf:
+        - $ref: '#/components/schemas/EmailRequest'
+        - type: object
+          required: [code, purpose]
+          properties:
+            code:
+              type: string
+              pattern: '^\d{6}$'
+            purpose:
+              type: string
+              enum: [REGISTRATION, PASSWORD_RESET]
+    CredentialRequest:
+      allOf:
+        - $ref: '#/components/schemas/EmailRequest'
+        - type: object
+          required: [ticketId, password, confirmPassword]
+          properties:
+            ticketId:
+              type: string
+              format: uuid
+            password:
+              type: string
+              minLength: 8
+              maxLength: 72
+            confirmPassword:
+              type: string
+              minLength: 8
+              maxLength: 72
