@@ -7,8 +7,6 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "test:e2e": "cypress run",
-    "test:e2e:line": "cypress run --spec cypress/e2e/line-oauth.cy.ts",
-    "test:e2e:email": "cypress run --spec cypress/e2e/email-registration-login.cy.ts",
     "test:e2e:open": "cypress open"
   },
   "dependencies": {

@@ -22,8 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
-    private final UserAccountDao userDao; private final RoleDao roleDao; private final UserRoleDao userRoleDao; private final PasswordEncoder encoder; private final PasswordPolicyService policyService;
-    public UserService(UserAccountDao userDao, RoleDao roleDao, UserRoleDao userRoleDao, PasswordEncoder encoder, PasswordPolicyService policyService) { this.userDao = userDao; this.roleDao = roleDao; this.userRoleDao = userRoleDao; this.encoder = encoder; this.policyService = policyService; }
+    private final UserAccountDao userDao; private final RoleDao roleDao; private final UserRoleDao userRoleDao; private final PasswordEncoder encoder;
+    public UserService(UserAccountDao userDao, RoleDao roleDao, UserRoleDao userRoleDao, PasswordEncoder encoder) { this.userDao = userDao; this.roleDao = roleDao; this.userRoleDao = userRoleDao; this.encoder = encoder; }
 
     @Transactional(readOnly = true)
     public List<UserResponse> findAll() { log.info("查詢使用者列表"); return userDao.findAll().stream().map(this::toResponse).toList(); }
@@ -31,14 +31,13 @@ public class UserService {
     public UserResponse create(UserRequest request) {
         log.info("管理員新增使用者 {}", request.username());
         if (userDao.findByUsername(request.username()).isPresent() || userDao.existsByEmail(request.email())) throw new BusinessException(HttpStatus.CONFLICT, "帳號或信箱已存在。");
-        policyService.validate(request.password());
         UserAccount user = userDao.save(new UserAccount(request.fullName(), request.username(), request.email(), encoder.encode(request.password()), "管理員新增"));
         assign(user, "EMPLOYEE"); return toResponse(user);
     }
 
     public UserResponse update(UUID id, UserUpdateRequest request) {
         UserAccount user = get(id); user.update(request.fullName(), request.email());
-        if (request.password() != null && !request.password().isBlank()) { policyService.validate(request.password()); user.updatePassword(encoder.encode(request.password())); }
+        if (request.password() != null && !request.password().isBlank()) user.updatePassword(encoder.encode(request.password()));
         log.info("更新使用者 {}", id); return toResponse(user);
     }
 
@@ -54,3 +53,4 @@ public class UserService {
     private UserAccount get(UUID id) { return userDao.findById(id).orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "找不到使用者。")); }
     private UserResponse toResponse(UserAccount user) { return new UserResponse(user.getId(), user.getFullName(), user.getUsername(), user.getEmail(), user.getRegistrationMethod(), user.isActive(), userRoleDao.findAllByUser(user).stream().map(r -> r.getRole().getRoleCode()).toList()); }
 }
+
