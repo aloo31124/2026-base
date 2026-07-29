@@ -8,6 +8,7 @@ cypress/videos/
 *.tsbuildinfo
 logs/
 *.log
+data/
 .env
 .env.*
 !.env.example
