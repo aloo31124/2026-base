@@ -13,6 +13,7 @@
 - [Architecture](#architecture) — 資料流與分層
 - [Project Structure](#project-structure) — 文件與程式碼路徑
 - [Test Strategy](#test-strategy) — JUnit、Postman、Cypress
+- [Sheet 第 16–17 列增量](#sheet-第-1617-列增量) — 綁定公司與員工綁定
 
 ## 技術樹（心智圖）
 
@@ -45,7 +46,7 @@ mindmap
 
 ## Summary
 
-在既有單體專案新增 `Company`、`SupervisorProfile`、`CompanyMembership` 三個 BO 與 JPA DAO，由單一 `CompanySupervisorManagementService` 維護公司、主管身分及一人一公司的原子性規則；REST Controller 提供三組管理 API，React 頁面依 `uiux/` 樣式提供公司、主管、綁定三個標籤。
+在既有單體專案沿用 `Company`、`SupervisorProfile`、`CompanyMembership` 三個 BO 與 JPA DAO，由單一 `CompanySupervisorManagementService` 維護公司、主管／員工身分及一人一公司的原子性規則；REST Controller 保留既有主管綁定 API 並新增員工綁定 API，React 頁面依 `uiux/` 樣式提供公司、主管、綁定公司三個標籤。
 
 ## Technical Decision Log
 
@@ -65,14 +66,14 @@ mindmap
 - **Testing**：JUnit 5、MockMvc、Newman 6.2.2、Cypress 15.18.1。
 - **Target Platform**：Docker/Linux Web 應用。
 - **Performance Goals**：一般列表及名稱篩選在測試資料規模下 2 秒內完成。
-- **Constraints**：不修改第 16 列後未標示「預計開發」的功能；沿用 JWT 與 `ApiResponse<T>`。
-- **Scale/Scope**：單一公司主管管理頁、三組 CRUD/綁定 API、三張新資料表。
+- **Constraints**：本次只修改第 16–17 列「預計開發」；不實作第 18 列後空白狀態功能；沿用 JWT 與 `ApiResponse<T>`。
+- **Scale/Scope**：單一公司主管管理頁、既有主管 API 加員工綁定 API、三張既有資料表。
 
 ## Constitution Check
 
 - **分層架構 PASS**：Controller 僅處理 HTTP；Service 持有規則；DAO 僅存取。
 - **測試必要性 PASS**：先建立整合測試，再實作 BO/DAO/Service/Controller/React；追加 Newman 與 Cypress。
-- **MVP PASS**：只新增 Sheet 第 12–15 列需要的欄位與操作。
+- **MVP PASS**：既有第 13–15 列保持不變，本次只新增 Sheet 第 16–17 列需要的欄位與操作。
 - **業務正確性 PASS**：以資料庫唯一限制及交易 Service 雙重確保一人一公司。
 - **向後相容 PASS**：新增路徑，不改既有 API payload。
 - **繁中註解 PASS**：所有新增方法與主要段落使用繁中註解。
@@ -85,7 +86,7 @@ mindmap
 4. JPA DAO 提供忽略大小寫的名稱查詢、關聯存在判斷與綁定搜尋。
 5. `CompanySupervisorManagementService` 在交易中執行 CRUD、角色授予/移除、關聯檢查與 DTO 轉換。
 6. `CompanySupervisorManagementController` 在 `/api/admin/company-supervisor-management` 暴露 REST API。
-7. React `/company-supervisor-management` 以三個標籤呈現管理流程，Route Guard 與側欄僅供系統管理員。
+7. React `/company-supervisor-management` 以三個標籤呈現管理流程；「綁定公司」內以局部 state 切換主管／員工，Route Guard 與側欄僅供系統管理員。
 
 ## Project Structure
 
@@ -112,11 +113,20 @@ frontend/src/pages/CompanySupervisorManagementPage.tsx
 frontend/cypress/e2e/company-supervisor-management.cy.ts
 postman/company-supervisor-management.postman_collection.json
 report/test/result-20260729-company-supervisor-management-{postman,cypress}.md
+report/test/result-20260730-company-supervisor-management-{postman,cypress}.md
 ```
 
 ## Test Strategy
 
-- MockMvc：公司 CRUD、主管必須既有使用者、角色授予、多人同公司、一人第二家公司衝突、名稱查詢、取消後刪除、一般使用者 403。
-- Postman/Newman：以啟動中的 H2 API 逐項確認 status、`ApiResponse` 與關鍵 response 值。
-- Cypress：管理員使用公司、主管、綁定三標籤完成主流程，另驗證一般使用者無權限頁。
+- MockMvc：既有公司／主管流程，加上員工資格、一人第二家公司衝突、公司／員工查詢、類型保護與取消後改綁。
+- Postman/Newman：以啟動中的 H2 API 逐項確認 status、`ApiResponse`、主管向後相容及員工綁定 response 值。
+- Cypress：管理員使用「綁定公司」標籤切換主管／員工並完成兩種綁定主流程，另驗證一般使用者無權限頁。
 - 建置：`backend/gradlew test build` 與 `frontend npm run build`。
+
+## Sheet 第 16–17 列增量
+
+1. 保留既有 `/bindings` 主管綁定 API，避免破壞現有 Postman、Cypress 與呼叫端。
+2. 新增 `/employee-bindings` 的查詢、建立與取消端點，沿用 `CompanyMembership` 與 `EMPLOYEE` 類型。
+3. DAO 新增只查 `EMPLOYEE` 的公司／員工姓名或帳號篩選；Service 驗證啟用、`EMPLOYEE` 角色、非主管及尚未綁定。
+4. React 將第三標籤文字改為「綁定公司」，在同一張表單與列表以主管／員工子類型切換。
+5. 先新增 MockMvc 與 Cypress 失敗案例，再實作後端與前端，最後用 Newman 與 Cypress 實際驗證並產生 2026-07-30 報告。

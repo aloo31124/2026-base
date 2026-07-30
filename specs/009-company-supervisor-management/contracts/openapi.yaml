@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 公司主管管理 API
-  version: 1.0.0
+  version: 1.1.0
 paths:
   /api/admin/company-supervisor-management/companies:
     get:
@@ -95,6 +95,36 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200": { description: 取消成功 }
+        "409": { description: 該筆不是主管綁定 }
+  /api/admin/company-supervisor-management/employee-bindings:
+    get:
+      summary: 依公司或員工姓名／帳號查詢員工綁定
+      parameters:
+        - { name: companyName, in: query, schema: { type: string } }
+        - { name: employeeName, in: query, schema: { type: string } }
+      responses:
+        "200": { description: 成功 }
+        "403": { description: 無系統管理員權限 }
+    post:
+      summary: 建立公司員工綁定
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeBindingRequest"
+      responses:
+        "200": { description: 綁定成功 }
+        "404": { description: 公司或使用者不存在 }
+        "409": { description: 使用者資格不符或已綁定公司 }
+  /api/admin/company-supervisor-management/employee-bindings/{id}:
+    delete:
+      summary: 取消公司員工綁定
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: 取消成功 }
+        "409": { description: 該筆不是員工綁定 }
 components:
   schemas:
     CompanyRequest:
@@ -109,3 +139,9 @@ components:
       properties:
         userId: { type: string, format: uuid }
         title: { type: string, minLength: 1, maxLength: 80 }
+    EmployeeBindingRequest:
+      type: object
+      required: [companyId, userId]
+      properties:
+        companyId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }

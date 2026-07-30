@@ -1,6 +1,6 @@
 ---
 name: company-supervisor-management
-description: 維護 AgentFlow 公司 CRUD、既有使用者主管身分、公司主管綁定、一人一公司限制，以及對應管理 API/React 頁面時使用。
+description: 維護 AgentFlow 公司 CRUD、既有使用者主管身分、主管與員工的公司綁定、一人一公司限制，以及對應管理 API/React 頁面時使用。
 ---
 
 # 公司主管管理
@@ -9,7 +9,7 @@ description: 維護 AgentFlow 公司 CRUD、既有使用者主管身分、公司
 
 - [資料契約](#資料契約) — 三張表與唯一性
 - [主管身分契約](#主管身分契約) — 既有使用者與角色
-- [綁定契約](#綁定契約) — 多主管與一人一公司
+- [綁定契約](#綁定契約) — 主管／員工與一人一公司
 - [刪除與權限契約](#刪除與權限契約) — 關聯保護及 RBAC
 
 ## 資料契約
@@ -22,8 +22,8 @@ description: 維護 AgentFlow 公司 CRUD、既有使用者主管身分、公司
 
 ## 綁定契約
 
-一家公司可有多筆主管或員工成員；同一使用者在 `company_membership` 最多一筆，因此主管與員工都只能屬於一家公司。取消主管綁定後，才可改綁其他公司。
+一家公司可有多筆主管或員工成員；同一使用者在 `company_membership` 最多一筆，因此主管與員工都只能屬於一家公司。員工綁定候選必須啟用、具有 `EMPLOYEE`、沒有主管資料且尚未綁定；取消綁定後才可改綁其他公司。既有 `/bindings` 保留主管契約，員工使用 `/employee-bindings`。
 
 ## 刪除與權限契約
 
-仍有成員的公司、仍有公司綁定的主管均拒絕刪除，使用者必須先明確取消綁定。所有 `/api/admin/company-supervisor-management/**` 與 `/company-supervisor-management` 僅允許 `SYSTEM_ADMIN`；403 訊息使用「[公司主管管理]」模組名稱。
+仍有成員的公司、仍有公司綁定的主管均拒絕刪除，使用者必須先明確取消綁定。取消端點必須核對 `SUPERVISOR`／`EMPLOYEE` 類型。所有 `/api/admin/company-supervisor-management/**` 與 `/company-supervisor-management` 僅允許 `SYSTEM_ADMIN`；頁面第三標籤固定顯示「綁定公司」，403 訊息使用「[公司主管管理]」模組名稱。

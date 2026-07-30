@@ -5,6 +5,8 @@ import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.BindingReque
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.BindingResponse;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.CompanyRequest;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.CompanyResponse;
+import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.EmployeeBindingRequest;
+import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.EmployeeBindingResponse;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.SupervisorCreateRequest;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.SupervisorResponse;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.SupervisorUpdateRequest;
@@ -140,5 +142,38 @@ public class CompanySupervisorManagementController {
     public ApiResponse<Void> deleteBinding(@PathVariable UUID id) {
         service.deleteBinding(id);
         return ApiResponse.ok("公司主管綁定已取消。", null);
+    }
+
+    /**
+     * 查詢公司員工綁定。
+     */
+    @GetMapping("/employee-bindings")
+    public ApiResponse<List<EmployeeBindingResponse>> findEmployeeBindings(
+        @RequestParam(defaultValue = "") String companyName,
+        @RequestParam(defaultValue = "") String employeeName
+    ) {
+        return ApiResponse.ok(
+            "公司員工綁定查詢成功。",
+            service.findEmployeeBindings(companyName, employeeName)
+        );
+    }
+
+    /**
+     * 建立公司員工綁定。
+     */
+    @PostMapping("/employee-bindings")
+    public ApiResponse<EmployeeBindingResponse> createEmployeeBinding(
+        @Valid @RequestBody EmployeeBindingRequest request
+    ) {
+        return ApiResponse.ok("公司員工綁定成功。", service.createEmployeeBinding(request));
+    }
+
+    /**
+     * 取消公司員工綁定。
+     */
+    @DeleteMapping("/employee-bindings/{id}")
+    public ApiResponse<Void> deleteEmployeeBinding(@PathVariable UUID id) {
+        service.deleteEmployeeBinding(id);
+        return ApiResponse.ok("公司員工綁定已取消。", null);
     }
 }

@@ -3,6 +3,7 @@ import { api } from '../app/api';
 import AppShell from '../components/AppShell';
 
 type Tab = 'companies' | 'supervisors' | 'bindings';
+type BindingKind = 'supervisor' | 'employee';
 
 interface Company {
   id: string;
@@ -32,30 +33,47 @@ interface Binding {
   title: string;
 }
 
+interface EmployeeBinding {
+  id: string;
+  companyId: string;
+  companyName: string;
+  userId: string;
+  employeeName: string;
+  employeeUsername: string;
+  employeeEmail: string;
+}
+
 interface UserOption {
   id: string;
   fullName: string;
   username: string;
   email: string;
   active: boolean;
+  roles: string[];
 }
 
 const blankCompany = { id: '', name: '', description: '' };
 const blankSupervisor = { id: '', userId: '', title: '' };
 const blankBinding = { companyId: '', supervisorId: '' };
+const blankEmployeeBinding = { companyId: '', userId: '' };
 
 export default function CompanySupervisorManagementPage() {
   const [tab, setTab] = useState<Tab>('companies');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [bindings, setBindings] = useState<Binding[]>([]);
+  const [employeeBindings, setEmployeeBindings] = useState<EmployeeBinding[]>([]);
+  const [boundEmployeeUserIds, setBoundEmployeeUserIds] = useState<string[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
+  const [bindingKind, setBindingKind] = useState<BindingKind>('supervisor');
   const [companySearch, setCompanySearch] = useState('');
   const [supervisorSearch, setSupervisorSearch] = useState('');
   const [bindingSearch, setBindingSearch] = useState({ companyName: '', supervisorName: '' });
+  const [employeeBindingSearch, setEmployeeBindingSearch] = useState({ companyName: '', employeeName: '' });
   const [companyForm, setCompanyForm] = useState(blankCompany);
   const [supervisorForm, setSupervisorForm] = useState(blankSupervisor);
   const [bindingForm, setBindingForm] = useState(blankBinding);
+  const [employeeBindingForm, setEmployeeBindingForm] = useState(blankEmployeeBinding);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -68,6 +86,15 @@ export default function CompanySupervisorManagementPage() {
     () => supervisors.filter(supervisor => !supervisor.companyId),
     [supervisors],
   );
+  const availableEmployees = useMemo(
+    () => users.filter(user =>
+      user.active
+      && user.roles.includes('EMPLOYEE')
+      && !supervisors.some(supervisor => supervisor.userId === user.id)
+      && !boundEmployeeUserIds.includes(user.id),
+    ),
+    [boundEmployeeUserIds, supervisors, users],
+  );
 
   /** 頁面初次載入時取得公司、主管、綁定與使用者選項。 */
   useEffect(() => {
@@ -79,15 +106,18 @@ export default function CompanySupervisorManagementPage() {
     setLoading(true);
     setError('');
     try {
-      const [companyRows, supervisorRows, bindingRows, userRows] = await Promise.all([
+      const [companyRows, supervisorRows, bindingRows, employeeBindingRows, userRows] = await Promise.all([
         api<Company[]>('/admin/company-supervisor-management/companies'),
         api<Supervisor[]>('/admin/company-supervisor-management/supervisors'),
         api<Binding[]>('/admin/company-supervisor-management/bindings'),
+        api<EmployeeBinding[]>('/admin/company-supervisor-management/employee-bindings'),
         api<UserOption[]>('/admin/users'),
       ]);
       setCompanies(companyRows);
       setSupervisors(supervisorRows);
       setBindings(bindingRows);
+      setEmployeeBindings(employeeBindingRows);
+      setBoundEmployeeUserIds(employeeBindingRows.map(binding => binding.userId));
       setUsers(userRows);
     } catch (reason) {
       setError((reason as Error).message);
@@ -226,6 +256,44 @@ export default function CompanySupervisorManagementPage() {
     );
   }
 
+  /** 建立公司與員工綁定。 */
+  async function saveEmployeeBinding(event: FormEvent) {
+    event.preventDefault();
+    await mutate(
+      () => api<EmployeeBinding>('/admin/company-supervisor-management/employee-bindings', {
+        method: 'POST',
+        body: JSON.stringify(employeeBindingForm),
+      }),
+      '公司員工綁定成功。',
+    );
+    setEmployeeBindingForm(blankEmployeeBinding);
+  }
+
+  /** 依公司與員工條件重新查詢綁定。 */
+  async function searchEmployeeBindings(event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    try {
+      const query = new URLSearchParams(employeeBindingSearch);
+      setEmployeeBindings(await api<EmployeeBinding[]>(
+        `/admin/company-supervisor-management/employee-bindings?${query}`,
+      ));
+    } catch (reason) {
+      setError((reason as Error).message);
+    }
+  }
+
+  /** 取消公司員工綁定。 */
+  async function deleteEmployeeBinding(id: string) {
+    await mutate(
+      () => api<void>(
+        `/admin/company-supervisor-management/employee-bindings/${id}`,
+        { method: 'DELETE' },
+      ),
+      '公司員工綁定已取消。',
+    );
+  }
+
   return <AppShell>
     <div className="content company-supervisor-content">
       <header className="page-heading">
@@ -240,13 +308,13 @@ export default function CompanySupervisorManagementPage() {
       </header>
 
       <div className="info-banner">
-        主管必須選自已註冊且啟用的使用者；公司或主管仍有綁定時，請先在「綁定」標籤取消關聯。
+        主管與員工必須選自已註冊且啟用的使用者；公司或主管仍有綁定時，請先在「綁定公司」標籤取消關聯。
       </div>
 
       <div className="tabs management-tabs" role="tablist" aria-label="公司主管管理標籤">
         <button data-testid="company-tab" className={tab === 'companies' ? 'active' : ''} onClick={() => setTab('companies')}>公司</button>
         <button data-testid="supervisor-tab" className={tab === 'supervisors' ? 'active' : ''} onClick={() => setTab('supervisors')}>主管</button>
-        <button data-testid="binding-tab" className={tab === 'bindings' ? 'active' : ''} onClick={() => setTab('bindings')}>綁定</button>
+        <button data-testid="binding-tab" className={tab === 'bindings' ? 'active' : ''} onClick={() => setTab('bindings')}>綁定公司</button>
       </div>
 
       {tab === 'companies' && <section className="management-grid">
@@ -312,39 +380,130 @@ export default function CompanySupervisorManagementPage() {
         </div>
       </section>}
 
-      {tab === 'bindings' && <section className="management-grid">
-        <form className="card management-form" onSubmit={saveBinding}>
-          <div><p className="eyebrow">Company membership</p><h2>新增綁定</h2></div>
-          <label>公司
-            <select data-testid="binding-company" required value={bindingForm.companyId} onChange={event => setBindingForm({ ...bindingForm, companyId: event.target.value })}>
-              <option value="">請選擇公司</option>
-              {companies.map(company => <option key={company.id} value={company.id}>{company.name}</option>)}
-            </select>
-          </label>
-          <label>未綁定主管
-            <select data-testid="binding-supervisor" required value={bindingForm.supervisorId} onChange={event => setBindingForm({ ...bindingForm, supervisorId: event.target.value })}>
-              <option value="">請選擇主管</option>
-              {availableSupervisors.map(supervisor => <option key={supervisor.id} value={supervisor.id}>{supervisor.fullName}（{supervisor.username}）</option>)}
-            </select>
-          </label>
-          <div className="actions"><button data-testid="binding-save" className="btn primary" disabled={loading}>建立綁定</button></div>
-        </form>
-        <div className="card management-list">
-          <form className="binding-search" onSubmit={searchBindings}>
-            <input data-testid="binding-company-search" aria-label="綁定公司查詢" placeholder="公司名稱" value={bindingSearch.companyName} onChange={event => setBindingSearch({ ...bindingSearch, companyName: event.target.value })} />
-            <input data-testid="binding-supervisor-search" aria-label="綁定主管查詢" placeholder="主管姓名或帳號" value={bindingSearch.supervisorName} onChange={event => setBindingSearch({ ...bindingSearch, supervisorName: event.target.value })} />
-            <button data-testid="binding-search-submit" className="btn secondary">查詢</button>
-          </form>
-          <table><thead><tr><th>公司</th><th>主管</th><th>職稱</th><th>操作</th></tr></thead>
-            <tbody>{bindings.map(binding => <tr key={binding.id} data-testid="binding-row">
-              <td><strong>{binding.companyName}</strong></td>
-              <td>{binding.supervisorName}<small>{binding.supervisorUsername}</small></td>
-              <td><span className="tag managed">{binding.title}</span></td>
-              <td><button className="btn danger" onClick={() => void deleteBinding(binding.id)}>取消綁定</button></td>
-            </tr>)}</tbody>
-          </table>
-          {bindings.length === 0 && <p className="empty-state">尚無符合條件的綁定。</p>}
+      {tab === 'bindings' && <section className="binding-section">
+        <div className="binding-kind-tabs" role="tablist" aria-label="綁定成員類型">
+          <button
+            data-testid="supervisor-binding-kind"
+            className={bindingKind === 'supervisor' ? 'active' : ''}
+            type="button"
+            onClick={() => setBindingKind('supervisor')}
+          >
+            主管
+          </button>
+          <button
+            data-testid="employee-binding-kind"
+            className={bindingKind === 'employee' ? 'active' : ''}
+            type="button"
+            onClick={() => setBindingKind('employee')}
+          >
+            員工
+          </button>
         </div>
+
+        {bindingKind === 'supervisor' ? <div className="management-grid">
+          <form className="card management-form" onSubmit={saveBinding}>
+            <div><p className="eyebrow">Supervisor membership</p><h2>主管綁定公司</h2></div>
+            <label>公司
+              <select data-testid="binding-company" required value={bindingForm.companyId} onChange={event => setBindingForm({ ...bindingForm, companyId: event.target.value })}>
+                <option value="">請選擇公司</option>
+                {companies.map(company => <option key={company.id} value={company.id}>{company.name}</option>)}
+              </select>
+            </label>
+            <label>未綁定主管
+              <select data-testid="binding-supervisor" required value={bindingForm.supervisorId} onChange={event => setBindingForm({ ...bindingForm, supervisorId: event.target.value })}>
+                <option value="">請選擇主管</option>
+                {availableSupervisors.map(supervisor => <option key={supervisor.id} value={supervisor.id}>{supervisor.fullName}（{supervisor.username}）</option>)}
+              </select>
+            </label>
+            <div className="actions"><button data-testid="binding-save" className="btn primary" disabled={loading}>建立綁定</button></div>
+          </form>
+          <div className="card management-list">
+            <form className="binding-search" onSubmit={searchBindings}>
+              <input data-testid="binding-company-search" aria-label="綁定公司查詢" placeholder="公司名稱" value={bindingSearch.companyName} onChange={event => setBindingSearch({ ...bindingSearch, companyName: event.target.value })} />
+              <input data-testid="binding-supervisor-search" aria-label="綁定主管查詢" placeholder="主管姓名或帳號" value={bindingSearch.supervisorName} onChange={event => setBindingSearch({ ...bindingSearch, supervisorName: event.target.value })} />
+              <button data-testid="binding-search-submit" className="btn secondary">查詢</button>
+            </form>
+            <table><thead><tr><th>公司</th><th>主管</th><th>職稱</th><th>操作</th></tr></thead>
+              <tbody>{bindings.map(binding => <tr key={binding.id} data-testid="binding-row">
+                <td><strong>{binding.companyName}</strong></td>
+                <td>{binding.supervisorName}<small>{binding.supervisorUsername}</small></td>
+                <td><span className="tag managed">{binding.title}</span></td>
+                <td><button className="btn danger" onClick={() => void deleteBinding(binding.id)}>取消綁定</button></td>
+              </tr>)}</tbody>
+            </table>
+            {bindings.length === 0 && <p className="empty-state">尚無符合條件的主管綁定。</p>}
+          </div>
+        </div> : <div className="management-grid">
+          <form className="card management-form" onSubmit={saveEmployeeBinding}>
+            <div><p className="eyebrow">Employee membership</p><h2>員工綁定公司</h2></div>
+            <label>公司
+              <select
+                data-testid="employee-binding-company"
+                required
+                value={employeeBindingForm.companyId}
+                onChange={event => setEmployeeBindingForm({
+                  ...employeeBindingForm,
+                  companyId: event.target.value,
+                })}
+              >
+                <option value="">請選擇公司</option>
+                {companies.map(company => <option key={company.id} value={company.id}>{company.name}</option>)}
+              </select>
+            </label>
+            <label>未綁定員工
+              <select
+                data-testid="employee-binding-user"
+                required
+                value={employeeBindingForm.userId}
+                onChange={event => setEmployeeBindingForm({
+                  ...employeeBindingForm,
+                  userId: event.target.value,
+                })}
+              >
+                <option value="">請選擇員工</option>
+                {availableEmployees.map(user => <option key={user.id} value={user.id}>{user.fullName}（{user.username}）</option>)}
+              </select>
+            </label>
+            <p className="form-hint">僅顯示啟用、具有員工角色、尚未成為主管且未綁定公司的使用者。</p>
+            <div className="actions">
+              <button data-testid="employee-binding-save" className="btn primary" disabled={loading}>建立綁定</button>
+            </div>
+          </form>
+          <div className="card management-list">
+            <form className="binding-search" onSubmit={searchEmployeeBindings}>
+              <input
+                data-testid="employee-binding-company-search"
+                aria-label="員工綁定公司查詢"
+                placeholder="公司名稱"
+                value={employeeBindingSearch.companyName}
+                onChange={event => setEmployeeBindingSearch({
+                  ...employeeBindingSearch,
+                  companyName: event.target.value,
+                })}
+              />
+              <input
+                data-testid="employee-binding-user-search"
+                aria-label="綁定員工查詢"
+                placeholder="員工姓名或帳號"
+                value={employeeBindingSearch.employeeName}
+                onChange={event => setEmployeeBindingSearch({
+                  ...employeeBindingSearch,
+                  employeeName: event.target.value,
+                })}
+              />
+              <button data-testid="employee-binding-search-submit" className="btn secondary">查詢</button>
+            </form>
+            <table><thead><tr><th>公司</th><th>員工</th><th>信箱</th><th>操作</th></tr></thead>
+              <tbody>{employeeBindings.map(binding => <tr key={binding.id} data-testid="employee-binding-row">
+                <td><strong>{binding.companyName}</strong></td>
+                <td>{binding.employeeName}<small>{binding.employeeUsername}</small></td>
+                <td>{binding.employeeEmail}</td>
+                <td><button className="btn danger" onClick={() => void deleteEmployeeBinding(binding.id)}>取消綁定</button></td>
+              </tr>)}</tbody>
+            </table>
+            {employeeBindings.length === 0 && <p className="empty-state">尚無符合條件的員工綁定。</p>}
+          </div>
+        </div>}
       </section>}
 
       <div className="management-status" aria-live="polite">

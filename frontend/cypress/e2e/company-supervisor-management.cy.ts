@@ -11,10 +11,11 @@ describe('公司主管管理', () => {
     cy.url().should('not.include', '/login');
   }
 
-  it('管理員可完成公司、主管與綁定 CRUD 及名稱查詢', () => {
+  it('管理員可完成公司、主管與員工綁定 CRUD 及名稱查詢', () => {
     login('admin', 'admin123');
     cy.visit('/company-supervisor-management');
     cy.contains('公司主管管理').should('be.visible');
+    cy.get('[data-testid="binding-tab"]').should('contain', '綁定公司');
 
     cy.get('[data-testid="company-name"]').type(companyName);
     cy.get('[data-testid="company-description"]').type('Cypress 建立的公司');
@@ -60,6 +61,22 @@ describe('公司主管管理', () => {
     cy.contains('[data-testid="binding-row"]', updatedCompanyName).within(() => {
       cy.contains('取消綁定').click();
     });
+
+    cy.get('[data-testid="employee-binding-kind"]').click();
+    cy.get('[data-testid="employee-binding-company"]').select(updatedCompanyName);
+    cy.get('[data-testid="employee-binding-user"]').select('Demo User 2（user2）');
+    cy.get('[data-testid="employee-binding-save"]').click();
+    cy.get('[data-testid="company-supervisor-success"]').should('contain', '公司員工綁定成功');
+    cy.get('[data-testid="employee-binding-company-search"]').type(updatedCompanyName);
+    cy.get('[data-testid="employee-binding-user-search"]').type('Demo User 2');
+    cy.get('[data-testid="employee-binding-search-submit"]').click();
+    cy.contains('[data-testid="employee-binding-row"]', updatedCompanyName)
+      .should('contain', 'Demo User 2')
+      .and('contain', 'user2');
+    cy.contains('[data-testid="employee-binding-row"]', updatedCompanyName).within(() => {
+      cy.contains('取消綁定').click();
+    });
+
     cy.get('[data-testid="supervisor-tab"]').click();
     cy.contains('[data-testid="supervisor-row"]', 'Demo User').within(() => {
       cy.contains('刪除').click();

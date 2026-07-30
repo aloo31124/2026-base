@@ -20,7 +20,11 @@
     { "key": "supervisor2Id", "value": "" },
     { "key": "binding1Id", "value": "" },
     { "key": "binding2Id", "value": "" },
-    { "key": "movedBindingId", "value": "" }
+    { "key": "movedBindingId", "value": "" },
+    { "key": "employeeUserId", "value": "" },
+    { "key": "employeeName", "value": "" },
+    { "key": "employeeBindingId", "value": "" },
+    { "key": "movedEmployeeBindingId", "value": "" }
   ],
   "item": [
     {
@@ -34,7 +38,8 @@
               "pm.collectionVariables.set('suffix', suffix);",
               "pm.collectionVariables.set('companyAName', `Postman甲公司-${suffix}`);",
               "pm.collectionVariables.set('companyBName', `Postman乙公司-${suffix}`);",
-              "pm.collectionVariables.set('user1Name', `Postman主管甲-${suffix}`);"
+              "pm.collectionVariables.set('user1Name', `Postman主管甲-${suffix}`);",
+              "pm.collectionVariables.set('employeeName', `Postman員工-${suffix}`);"
             ]
           }
         },
@@ -256,6 +261,109 @@
         "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyBId}}\",\"supervisorId\":\"{{supervisor1Id}}\"}" },
         "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "bindings"] }
+      }
+    },
+    {
+      "name": "16 建立員工使用者",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('建立員工使用者 200', () => pm.response.to.have.status(200));",
+        "const employee = pm.response.json().data;",
+        "pm.test('員工 response 正確', () => { pm.expect(employee.fullName).to.eql(pm.collectionVariables.get('employeeName')); pm.expect(employee.roles).to.include('EMPLOYEE'); });",
+        "pm.collectionVariables.set('employeeUserId', employee.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"fullName\":\"{{employeeName}}\",\"username\":\"postman.employee.{{suffix}}\",\"email\":\"postman.employee.{{suffix}}@example.com\",\"password\":\"password123\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"] }
+      }
+    },
+    {
+      "name": "17 員工綁定甲公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('員工綁定 200', () => pm.response.to.have.status(200));",
+        "const binding = pm.response.json().data;",
+        "pm.test('員工綁定 response 正確', () => { pm.expect(binding.companyId).to.eql(pm.collectionVariables.get('companyAId')); pm.expect(binding.userId).to.eql(pm.collectionVariables.get('employeeUserId')); pm.expect(binding.employeeName).to.eql(pm.collectionVariables.get('employeeName')); });",
+        "pm.collectionVariables.set('employeeBindingId', binding.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyAId}}\",\"userId\":\"{{employeeUserId}}\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/employee-bindings", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "employee-bindings"] }
+      }
+    },
+    {
+      "name": "18 依公司與員工名稱查詢綁定",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('員工綁定查詢 200', () => pm.response.to.have.status(200));",
+        "const rows = pm.response.json().data;",
+        "pm.test('雙條件只命中指定員工', () => { pm.expect(rows).to.have.lengthOf(1); pm.expect(rows[0].companyName).to.eql(pm.collectionVariables.get('companyAName')); pm.expect(rows[0].employeeName).to.eql(pm.collectionVariables.get('employeeName')); });"
+      ] } }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/company-supervisor-management/employee-bindings?companyName={{companyAName}}&employeeName={{employeeName}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "company-supervisor-management", "employee-bindings"],
+          "query": [
+            { "key": "companyName", "value": "{{companyAName}}" },
+            { "key": "employeeName", "value": "{{employeeName}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "19 同員工禁止綁定第二家公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('員工第二家公司 409', () => pm.response.to.have.status(409));",
+        "pm.test('員工衝突訊息正確', () => pm.expect(pm.response.json().message).to.include('已綁定公司'));"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyBId}}\",\"userId\":\"{{employeeUserId}}\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/employee-bindings", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "employee-bindings"] }
+      }
+    },
+    {
+      "name": "20 主管端點禁止取消員工綁定",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('錯誤類型取消 409', () => pm.response.to.have.status(409));",
+        "pm.test('類型保護訊息正確', () => pm.expect(pm.response.json().message).to.include('不是主管綁定'));"
+      ] } }],
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings/{{employeeBindingId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "bindings", "{{employeeBindingId}}"] }
+      }
+    },
+    {
+      "name": "21 取消員工綁定",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('取消員工綁定 200', () => pm.response.to.have.status(200));",
+        "pm.test('取消員工 response data 為 null', () => pm.expect(pm.response.json().data).to.eql(null));"
+      ] } }],
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/employee-bindings/{{employeeBindingId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "employee-bindings", "{{employeeBindingId}}"] }
+      }
+    },
+    {
+      "name": "22 員工取消後改綁乙公司",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('員工取消後改綁 200', () => pm.response.to.have.status(200));",
+        "const binding = pm.response.json().data;",
+        "pm.test('員工新公司 response 正確', () => { pm.expect(binding.companyId).to.eql(pm.collectionVariables.get('companyBId')); pm.expect(binding.userId).to.eql(pm.collectionVariables.get('employeeUserId')); });",
+        "pm.collectionVariables.set('movedEmployeeBindingId', binding.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyBId}}\",\"userId\":\"{{employeeUserId}}\"}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/company-supervisor-management/employee-bindings", "host": ["{{baseUrl}}"], "path": ["api", "admin", "company-supervisor-management", "employee-bindings"] }
       }
     }
   ]

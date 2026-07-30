@@ -71,4 +71,22 @@ public final class CompanySupervisorManagementDtos {
         Instant createdAt
     ) {
     }
+
+    public record EmployeeBindingRequest(
+        @NotNull UUID companyId,
+        @NotNull UUID userId
+    ) {
+    }
+
+    public record EmployeeBindingResponse(
+        UUID id,
+        UUID companyId,
+        String companyName,
+        UUID userId,
+        String employeeName,
+        String employeeUsername,
+        String employeeEmail,
+        Instant createdAt
+    ) {
+    }
 }

@@ -52,4 +52,29 @@ public interface CompanyMembershipDao extends JpaRepository<CompanyMembership, U
         @Param("companyName") String companyName,
         @Param("supervisorName") String supervisorName
     );
+
+    /**
+     * 依公司及員工關鍵字查詢員工綁定。
+     *
+     * @param companyName 小寫公司名稱
+     * @param employeeName 小寫員工姓名或帳號
+     * @return 員工綁定列表
+     */
+    @EntityGraph(attributePaths = {"company", "user"})
+    @Query("""
+        select membership
+        from CompanyMembership membership
+        where membership.memberType = com.agentflow.base.model.bo.CompanyMembership.MemberType.EMPLOYEE
+          and (:companyName = '' or lower(membership.company.name) like concat('%', :companyName, '%'))
+          and (
+            :employeeName = ''
+            or lower(membership.user.fullName) like concat('%', :employeeName, '%')
+            or lower(membership.user.username) like concat('%', :employeeName, '%')
+          )
+        order by membership.company.name asc, membership.user.fullName asc
+        """)
+    List<CompanyMembership> searchEmployeeBindings(
+        @Param("companyName") String companyName,
+        @Param("employeeName") String employeeName
+    );
 }

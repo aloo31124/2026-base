@@ -17,6 +17,8 @@ import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.BindingReque
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.BindingResponse;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.CompanyRequest;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.CompanyResponse;
+import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.EmployeeBindingRequest;
+import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.EmployeeBindingResponse;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.SupervisorCreateRequest;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.SupervisorResponse;
 import com.agentflow.base.model.dto.CompanySupervisorManagementDtos.SupervisorUpdateRequest;
@@ -34,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompanySupervisorManagementService {
     private static final Logger log = LoggerFactory.getLogger(CompanySupervisorManagementService.class);
     private static final String MANAGER_ROLE = "MANAGER";
+    private static final String EMPLOYEE_ROLE = "EMPLOYEE";
 
     private final CompanyDao companyDao;
     private final SupervisorProfileDao supervisorDao;
@@ -215,6 +218,61 @@ public class CompanySupervisorManagementService {
     }
 
     /**
+     * 依公司與員工名稱查詢員工綁定。
+     */
+    @Transactional(readOnly = true)
+    public List<EmployeeBindingResponse> findEmployeeBindings(String companyName, String employeeName) {
+        return membershipDao.searchEmployeeBindings(
+                normalizeSearch(companyName),
+                normalizeSearch(employeeName)
+            ).stream()
+            .map(this::toEmployeeBindingResponse)
+            .toList();
+    }
+
+    /**
+     * 建立公司員工綁定並強制員工資格與一人一家公司。
+     */
+    public EmployeeBindingResponse createEmployeeBinding(EmployeeBindingRequest request) {
+        Company company = getCompany(request.companyId());
+        UserAccount user = userDao.findById(request.userId())
+            .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "找不到已註冊使用者。"));
+
+        // 員工候選必須為啟用且具員工角色，避免管理員綁定不具員工身分的帳號。
+        if (!user.isActive()) {
+            throw new BusinessException(HttpStatus.CONFLICT, "已停用的使用者不得綁定為員工。");
+        }
+        if (!userRoleDao.existsByUserAndRole_RoleCode(user, EMPLOYEE_ROLE)) {
+            throw new BusinessException(HttpStatus.CONFLICT, "該使用者不具員工角色。");
+        }
+        if (supervisorDao.existsByUser(user)) {
+            throw new BusinessException(HttpStatus.CONFLICT, "該使用者已有主管身分，請使用主管綁定。");
+        }
+        if (membershipDao.findByUser(user).isPresent()) {
+            throw new BusinessException(HttpStatus.CONFLICT, "該員工已綁定公司，請先取消原綁定。");
+        }
+
+        CompanyMembership membership = membershipDao.save(
+            new CompanyMembership(company, user, MemberType.EMPLOYEE)
+        );
+        log.info("綁定員工 {} 至公司 {}", user.getId(), company.getId());
+        return toEmployeeBindingResponse(membership);
+    }
+
+    /**
+     * 取消公司員工綁定。
+     */
+    public void deleteEmployeeBinding(UUID id) {
+        CompanyMembership membership = membershipDao.findById(id)
+            .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "找不到公司員工綁定。"));
+        if (membership.getMemberType() != MemberType.EMPLOYEE) {
+            throw new BusinessException(HttpStatus.CONFLICT, "此綁定不是員工綁定，無法由員工流程取消。");
+        }
+        membershipDao.delete(membership);
+        log.info("取消公司員工綁定 {}", id);
+    }
+
+    /**
      * 取得公司，不存在時回覆 404。
      */
     private Company getCompany(UUID id) {
@@ -290,6 +348,23 @@ public class CompanySupervisorManagementService {
             user.getFullName(),
             user.getUsername(),
             supervisor.getTitle(),
+            membership.getCreatedAt()
+        );
+    }
+
+    /**
+     * 將員工綁定轉為 API 回應。
+     */
+    private EmployeeBindingResponse toEmployeeBindingResponse(CompanyMembership membership) {
+        UserAccount user = membership.getUser();
+        return new EmployeeBindingResponse(
+            membership.getId(),
+            membership.getCompany().getId(),
+            membership.getCompany().getName(),
+            user.getId(),
+            user.getFullName(),
+            user.getUsername(),
+            user.getEmail(),
             membership.getCreatedAt()
         );
     }

@@ -176,6 +176,80 @@ class CompanySupervisorManagementIntegrationTest {
     }
 
     /**
+     * 驗證員工可綁定、依公司與員工查詢、拒絕第二家公司，並在取消後改綁。
+     */
+    @Test
+    void employeeBindingsSupportSearchConflictAndRebinding() throws Exception {
+        String token = token("admin", "admin123");
+        String employeeName = "搜尋員工";
+        JsonNode firstCompany = createCompany(token, "員工甲公司-" + UUID.randomUUID(), "");
+        JsonNode secondCompany = createCompany(token, "員工乙公司-" + UUID.randomUUID(), "");
+        JsonNode employee = createUser(token, employeeName);
+
+        JsonNode binding = createEmployeeBinding(
+            token,
+            firstCompany.path("id").asText(),
+            employee.path("id").asText()
+        );
+
+        mvc.perform(get(API + "/employee-bindings")
+                .queryParam("companyName", firstCompany.path("name").asText())
+                .queryParam("employeeName", employeeName)
+                .header("Authorization", bearer(token)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].companyId", is(firstCompany.path("id").asText())))
+            .andExpect(jsonPath("$.data[0].userId", is(employee.path("id").asText())))
+            .andExpect(jsonPath("$.data[0].employeeName", is(employeeName)))
+            .andExpect(jsonPath("$.data[0].employeeUsername", is(employee.path("username").asText())));
+
+        mvc.perform(post(API + "/employee-bindings")
+                .header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "companyId", secondCompany.path("id").asText(),
+                    "userId", employee.path("id").asText()
+                ))))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("已綁定公司")));
+
+        mvc.perform(delete(API + "/bindings/" + binding.path("id").asText())
+                .header("Authorization", bearer(token)))
+            .andExpect(status().isConflict());
+
+        mvc.perform(delete(API + "/employee-bindings/" + binding.path("id").asText())
+                .header("Authorization", bearer(token)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data", nullValue()));
+
+        createEmployeeBinding(
+            token,
+            secondCompany.path("id").asText(),
+            employee.path("id").asText()
+        );
+    }
+
+    /**
+     * 驗證已建立主管資料的使用者不能再用員工身分綁定公司。
+     */
+    @Test
+    void supervisorCannotBeBoundAsEmployee() throws Exception {
+        String token = token("admin", "admin123");
+        JsonNode company = createCompany(token, "身分公司-" + UUID.randomUUID(), "");
+        JsonNode user = createUser(token, "身分主管");
+        createSupervisor(token, user.path("id").asText(), "主管");
+
+        mvc.perform(post(API + "/employee-bindings")
+                .header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "companyId", company.path("id").asText(),
+                    "userId", user.path("id").asText()
+                ))))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("主管")));
+    }
+
+    /**
      * 驗證一般使用者收到公司主管管理專屬 403 訊息。
      */
     @Test
@@ -239,6 +313,19 @@ class CompanySupervisorManagementIntegrationTest {
                 .header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json(Map.of("companyId", companyId, "supervisorId", supervisorId))))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+        return mapper.readTree(body).path("data");
+    }
+
+    /**
+     * 透過管理 API 建立公司員工綁定並回傳資料節點。
+     */
+    private JsonNode createEmployeeBinding(String token, String companyId, String userId) throws Exception {
+        String body = mvc.perform(post(API + "/employee-bindings")
+                .header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("companyId", companyId, "userId", userId))))
             .andExpect(status().isOk())
             .andReturn().getResponse().getContentAsString();
         return mapper.readTree(body).path("data");

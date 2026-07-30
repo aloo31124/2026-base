@@ -4,7 +4,7 @@
 
 - [Company](#company) — 公司主檔
 - [SupervisorProfile](#supervisorprofile) — 已註冊使用者主管資料
-- [CompanyMembership](#companymembership) — 一人一公司綁定
+- [CompanyMembership](#companymembership) — 主管／員工共用的一人一公司綁定
 - [Relationships](#relationships) — 實體關聯與狀態
 
 ## Company
@@ -41,3 +41,4 @@
 - `UserAccount 1 — 0..1 CompanyMembership`：資料庫唯一鍵保證一人一家公司。
 - `UserAccount 1 — 0..1 SupervisorProfile`：主管資料只能建立於已註冊使用者。
 - 建立 `SupervisorProfile` 時附加 `MANAGER`；刪除前必須無 `CompanyMembership`。
+- `EMPLOYEE` 綁定僅允許啟用、具 `EMPLOYEE` 角色且沒有 `SupervisorProfile` 的使用者；身分類型由 `member_type` 明確保存。
