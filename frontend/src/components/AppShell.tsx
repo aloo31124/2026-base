@@ -14,7 +14,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   }, [darkMode]);
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 600px)');
+    const media = window.matchMedia('(max-width: 720px)');
     const syncMobileSidebar = () => {
       if (media.matches) setSidebarCollapsed(true);
     };
