@@ -39,6 +39,8 @@ public class GlobalExceptionHandler {
         String message;
         if (request.getRequestURI().startsWith("/api/admin/company-supervisor-management")) {
             message = "[公司主管管理] [api] 無系統管理員權限。";
+        } else if (request.getRequestURI().startsWith("/api/task-assignment")) {
+            message = "[任務指派] [api] 無主管權限。";
         } else if (request.getRequestURI().startsWith("/api/admin/registration-management")) {
             message = "[註冊登入管理] [api] 無系統管理員權限。";
         } else {

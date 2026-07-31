@@ -29,6 +29,15 @@ public interface CompanyMembershipDao extends JpaRepository<CompanyMembership, U
     Optional<CompanyMembership> findByUser(UserAccount user);
 
     /**
+     * 依公司與成員類型取得成員。
+     */
+    @EntityGraph(attributePaths = {"company", "user"})
+    List<CompanyMembership> findAllByCompanyAndMemberTypeOrderByUser_FullNameAsc(
+        Company company,
+        CompanyMembership.MemberType memberType
+    );
+
+    /**
      * 依公司及主管關鍵字查詢綁定。
      *
      * @param companyName 小寫公司名稱

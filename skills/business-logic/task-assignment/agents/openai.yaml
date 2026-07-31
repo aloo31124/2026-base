@@ -1,0 +1,4 @@
+interface:
+  display_name: "任務指派"
+  short_description: "維護 AgentFlow 公司內主管、員工綁定與任務狀態轉換契約"
+  default_prompt: "Use $task-assignment to implement or review AgentFlow task assignment business rules."

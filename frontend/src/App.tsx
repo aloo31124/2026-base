@@ -10,6 +10,7 @@ import EmailRegistrationPage from './pages/EmailRegistrationPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import RegistrationManagementPage from './pages/RegistrationManagementPage';
 import CompanySupervisorManagementPage from './pages/CompanySupervisorManagementPage';
+import TaskAssignmentPage from './pages/TaskAssignmentPage';
 
 function Guard({
   children,
@@ -46,6 +47,7 @@ export default function App() {
         <CompanySupervisorManagementPage />
       </Guard>
     } />
+    <Route path="/task-assignment" element={<Guard><TaskAssignmentPage /></Guard>} />
     <Route path="/test/testTemp/" element={<Guard><TestPage /></Guard>} />
     <Route path="/unauthorized" element={<UnauthorizedPage />} />
     <Route path="*" element={<Navigate to="/users" replace />} />

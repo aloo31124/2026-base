@@ -1,0 +1,42 @@
+openapi: 3.1.0
+info:
+  title: 任務指派 API
+  version: 1.0.0
+paths:
+  /api/task-assignment/context:
+    get:
+      summary: 取得目前使用者公司與角色情境
+  /api/task-assignment/company-bindings:
+    post:
+      summary: 依公司名稱綁定目前使用者
+  /api/task-assignment/employees:
+    get:
+      summary: 主管依信箱搜尋同公司員工
+  /api/task-assignment/employee-bindings:
+    post:
+      summary: 建立主管員工綁定
+  /api/task-assignment/employee-bindings/{id}:
+    delete:
+      summary: 取消主管員工綁定
+  /api/task-assignment/assignees:
+    get:
+      summary: 查詢合法受派人
+  /api/task-assignment/tasks:
+    get:
+      summary: 查詢與排序本人建立任務
+    post:
+      summary: 建立任務
+  /api/task-assignment/tasks/{id}:
+    put:
+      summary: 修改並重新指派任務
+    delete:
+      summary: 刪除任務
+  /api/task-assignment/tasks/{id}/withdraw:
+    post:
+      summary: 撤回任務
+  /api/task-assignment/inbox:
+    get:
+      summary: 查詢我的任務
+  /api/task-assignment/tasks/{id}/return:
+    post:
+      summary: 退回任務並保存原因

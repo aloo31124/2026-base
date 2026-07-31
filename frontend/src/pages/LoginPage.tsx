@@ -6,7 +6,14 @@ import { clearAuthError, login, requestLineAuthorization } from '../features/aut
 export default function LoginPage() {
   const dispatch = useAppDispatch(); const navigate = useNavigate(); const status = useAppSelector(s => s.auth.status); const error = useAppSelector(s => s.auth.error);
   const [username, setUsername] = useState('admin'); const [password, setPassword] = useState('admin123');
-  async function submit(event: FormEvent) { event.preventDefault(); const result = await dispatch(login({ username, password })); if (login.fulfilled.match(result)) navigate(result.payload.roles.includes('SYSTEM_ADMIN') ? '/users' : '/test/testTemp/'); }
+  /** 登入後依角色進入管理頁或公司／任務協作流程。 */
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const result = await dispatch(login({ username, password }));
+    if (login.fulfilled.match(result)) {
+      navigate(result.payload.roles.includes('SYSTEM_ADMIN') ? '/users' : '/task-assignment');
+    }
+  }
   async function lineLogin() {
     dispatch(clearAuthError());
     const result = await dispatch(requestLineAuthorization());

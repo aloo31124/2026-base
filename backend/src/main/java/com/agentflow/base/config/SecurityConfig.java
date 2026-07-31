@@ -61,6 +61,9 @@ public class SecurityConfig {
         if (requestUri.startsWith("/api/admin/company-supervisor-management")) {
             return "[公司主管管理] [api] 無系統管理員權限。";
         }
+        if (requestUri.startsWith("/api/task-assignment")) {
+            return "[任務指派] [api] 無主管權限。";
+        }
         if (requestUri.startsWith("/api/admin/registration-management")) {
             return "[註冊登入管理] [api] 無系統管理員權限。";
         }

@@ -1,0 +1,90 @@
+{
+  "info": {
+    "name": "AgentFlow 任務指派",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api" },
+    { "key": "suffix", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "if (!pm.collectionVariables.get('suffix')) pm.collectionVariables.set('suffix', Date.now().toString());"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 管理員登入",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}" }, "url": "{{baseUrl}}/auth/login" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('登入 200',()=>pm.response.to.have.status(200));", "pm.collectionVariables.set('adminToken', pm.response.json().data.token);"] } }]
+    },
+    {
+      "name": "02 建立公司",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Postman任務公司-{{suffix}}\",\"description\":\"任務指派 API 測試\"}" }, "url": "{{baseUrl}}/admin/company-supervisor-management/companies" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('公司建立成功',()=>pm.response.to.have.status(200));", "const d=pm.response.json().data; pm.collectionVariables.set('companyId',d.id); pm.collectionVariables.set('companyName',d.name);"] } }]
+    },
+    {
+      "name": "03 建立主管帳號",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"fullName\":\"Postman主管\",\"username\":\"pm.manager.{{suffix}}\",\"email\":\"pm.manager.{{suffix}}@example.com\",\"password\":\"password123\"}" }, "url": "{{baseUrl}}/admin/users" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('主管帳號建立成功',()=>pm.response.to.have.status(200));", "pm.collectionVariables.set('managerId',pm.response.json().data.id);"] } }]
+    },
+    {
+      "name": "04 建立員工帳號",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"fullName\":\"Postman員工\",\"username\":\"pm.employee.{{suffix}}\",\"email\":\"pm.employee.{{suffix}}@example.com\",\"password\":\"password123\"}" }, "url": "{{baseUrl}}/admin/users" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('員工帳號建立成功',()=>pm.response.to.have.status(200));", "pm.collectionVariables.set('employeeId',pm.response.json().data.id);"] } }]
+    },
+    {
+      "name": "05 建立主管身分",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"userId\":\"{{managerId}}\",\"title\":\"Postman主管\"}" }, "url": "{{baseUrl}}/admin/company-supervisor-management/supervisors" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('主管身分建立成功',()=>pm.response.to.have.status(200));", "pm.collectionVariables.set('supervisorId',pm.response.json().data.id);"] } }]
+    },
+    {
+      "name": "06 綁定主管公司",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"companyId\":\"{{companyId}}\",\"supervisorId\":\"{{supervisorId}}\"}" }, "url": "{{baseUrl}}/admin/company-supervisor-management/bindings" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('主管公司綁定成功',()=>pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "07 主管登入",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"username\":\"pm.manager.{{suffix}}\",\"password\":\"password123\"}" }, "url": "{{baseUrl}}/auth/login" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('主管取得 MANAGER',()=>{pm.expect(pm.response.json().data.roles).to.include('MANAGER')});", "pm.collectionVariables.set('managerToken',pm.response.json().data.token);"] } }]
+    },
+    {
+      "name": "08 員工登入",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"username\":\"pm.employee.{{suffix}}\",\"password\":\"password123\"}" }, "url": "{{baseUrl}}/auth/login" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('員工登入成功',()=>pm.response.to.have.status(200));", "pm.collectionVariables.set('employeeToken',pm.response.json().data.token);"] } }]
+    },
+    {
+      "name": "09 員工綁定公司",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"companyName\":\"{{companyName}}\"}" }, "url": "{{baseUrl}}/task-assignment/company-bindings" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('公司值正確',()=>pm.expect(pm.response.json().data.companyId).to.eql(pm.collectionVariables.get('companyId')));"] } }]
+    },
+    {
+      "name": "10 主管綁定員工",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{managerToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"employeeId\":\"{{employeeId}}\"}" }, "url": "{{baseUrl}}/task-assignment/employee-bindings" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('員工綁定值正確',()=>pm.expect(pm.response.json().data.employeeId).to.eql(pm.collectionVariables.get('employeeId')));"] } }]
+    },
+    {
+      "name": "11 建立任務",
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["pm.collectionVariables.set('deadline', new Date(Date.now()+86400000).toISOString());"] } },
+        { "listen": "test", "script": { "exec": ["pm.test('任務回應正確',()=>{const d=pm.response.json().data; pm.expect(d.status).to.eql('ASSIGNED'); pm.expect(d.assigneeId).to.eql(pm.collectionVariables.get('employeeId'));});", "pm.collectionVariables.set('taskId',pm.response.json().data.id);"] } }
+      ],
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{managerToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Postman任務-{{suffix}}\",\"content\":\"確認 response 值\",\"deadline\":\"{{deadline}}\",\"assigneeId\":\"{{employeeId}}\"}" }, "url": "{{baseUrl}}/task-assignment/tasks" }
+    },
+    {
+      "name": "12 查詢任務",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{managerToken}}" }], "url": "{{baseUrl}}/task-assignment/tasks?name=Postman&assignee=pm.employee.{{suffix}}&sortBy=deadline&direction=asc" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('查詢命中唯一任務',()=>{const d=pm.response.json().data; pm.expect(d.length).to.eql(1); pm.expect(d[0].id).to.eql(pm.collectionVariables.get('taskId'));});"] } }]
+    },
+    {
+      "name": "13 員工退回任務",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"reason\":\"Postman 退回原因\"}" }, "url": "{{baseUrl}}/task-assignment/tasks/{{taskId}}/return" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('退回狀態與原因正確',()=>{const d=pm.response.json().data; pm.expect(d.status).to.eql('RETURNED'); pm.expect(d.returnReason).to.eql('Postman 退回原因');});"] } }]
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package com.agentflow.base.dao;
 
 import com.agentflow.base.model.bo.UserAccount;
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,4 +12,5 @@ public interface UserAccountDao extends JpaRepository<UserAccount, UUID> {
     boolean existsByEmail(String email);
     boolean existsByEmailIgnoreCase(String email);
     boolean existsByUsername(String username);
+    List<UserAccount> findAllByEmailContainingIgnoreCaseOrderByFullNameAsc(String email);
 }
