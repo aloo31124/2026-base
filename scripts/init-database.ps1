@@ -96,4 +96,7 @@ if ($LASTEXITCODE -ne 0) { throw '建立 Database User 或 db_owner 關聯失敗
 Invoke-SqlFile -Database $DatabaseName -File (Join-Path $PSScriptRoot 'migrate-company-supervisor-unicode.sql')
 if ($LASTEXITCODE -ne 0) { throw '公司主管 Unicode 欄位遷移失敗。' }
 
+Invoke-SqlFile -Database $DatabaseName -File (Join-Path $PSScriptRoot 'migrate-password-policy-columns.sql')
+if ($LASTEXITCODE -ne 0) { throw '密碼政策欄位遷移失敗。' }
+
 Write-Host "資料庫 [$DatabaseName] 與專用 Login [$LoginName] 初始化完成。"

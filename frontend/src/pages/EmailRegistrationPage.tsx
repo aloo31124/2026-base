@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../app/api';
+import PasswordInput from '../components/PasswordInput';
 import { useAppDispatch } from '../app/hooks';
 import { acceptSession, type Session } from '../features/auth/authSlice';
 
@@ -145,10 +146,9 @@ export default function EmailRegistrationPage() {
 
         {step === 3 && <form className="auth-form" onSubmit={completeRegistration}>
           <label htmlFor="registration-password">密碼
-            <input
+            <PasswordInput
               id="registration-password"
               data-testid="registration-password"
-              type="password"
               minLength={8}
               maxLength={72}
               required
@@ -158,10 +158,9 @@ export default function EmailRegistrationPage() {
             />
           </label>
           <label htmlFor="registration-confirm-password">確認密碼
-            <input
+            <PasswordInput
               id="registration-confirm-password"
               data-testid="registration-confirm-password"
-              type="password"
               minLength={8}
               maxLength={72}
               required

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../app/api';
+import PasswordInput from '../components/PasswordInput';
 
 interface TicketResult {
   ticketId: string;
@@ -112,12 +113,13 @@ export default function ForgotPasswordPage() {
 
         {step === 3 && <form className="auth-form" onSubmit={resetPassword}>
           <label htmlFor="reset-password">新密碼
-            <input id="reset-password" data-testid="reset-password" type="password" minLength={8} maxLength={72}
-              required value={password} onChange={event => setPassword(event.target.value)} />
+            <PasswordInput id="reset-password" data-testid="reset-password" minLength={8} maxLength={72}
+              required autoComplete="new-password" value={password}
+              onChange={event => setPassword(event.target.value)} />
           </label>
           <label htmlFor="reset-confirm-password">確認新密碼
-            <input id="reset-confirm-password" data-testid="reset-confirm-password" type="password" minLength={8}
-              maxLength={72} required value={confirmPassword}
+            <PasswordInput id="reset-confirm-password" data-testid="reset-confirm-password" minLength={8}
+              maxLength={72} required autoComplete="new-password" value={confirmPassword}
               onChange={event => setConfirmPassword(event.target.value)} />
           </label>
           <button data-testid="reset-submit" className="btn primary" disabled={loading}>更新密碼</button>

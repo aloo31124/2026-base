@@ -83,3 +83,4 @@ done
 run_sql -d master -Q "IF DB_ID(N'$DATABASE_NAME') IS NULL EXEC(N'CREATE DATABASE [$DATABASE_NAME]'); IF SUSER_ID(N'$LOGIN_NAME') IS NULL CREATE LOGIN [$LOGIN_NAME] WITH PASSWORD = N'$ESCAPED_PASSWORD', CHECK_POLICY = OFF;"
 run_sql -d "$DATABASE_NAME" -Q "IF USER_ID(N'$LOGIN_NAME') IS NULL CREATE USER [$LOGIN_NAME] FOR LOGIN [$LOGIN_NAME]; IF IS_ROLEMEMBER(N'db_owner', N'$LOGIN_NAME') <> 1 ALTER ROLE [db_owner] ADD MEMBER [$LOGIN_NAME]; SELECT DB_NAME() AS database_name, N'$LOGIN_NAME' AS login_name, N'initialized' AS result;"
 run_sql_file "$DATABASE_NAME" "$REPO_ROOT/scripts/migrate-company-supervisor-unicode.sql"
+run_sql_file "$DATABASE_NAME" "$REPO_ROOT/scripts/migrate-password-policy-columns.sql"
