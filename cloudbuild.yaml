@@ -17,6 +17,7 @@
 #   gcloud auth login aloo31124@gmail.com
 #   gcloud services enable cloudbuild.googleapis.com run.googleapis.com \
 #       artifactregistry.googleapis.com sqladmin.googleapis.com compute.googleapis.com \
+#       secretmanager.googleapis.com \
 #       --project base-502702
 #   gcloud artifacts repositories create base-repo --repository-format=docker \
 #       --location=asia-east1 --project base-502702
@@ -34,6 +35,14 @@
 #   # Cloud Build / Cloud Run 預設服務帳戶需要的角色 (run.admin, iam.serviceAccountUser, cloudsql.client)
 #   gcloud projects add-iam-policy-binding base-502702 \
 #       --member=serviceAccount:316015752010-compute@developer.gserviceaccount.com --role=roles/run.admin
+#   # Gmail SMTP：使用 Gmail 應用程式密碼，不要把密碼寫入 cloudbuild substitution。
+#   gcloud secrets create base-gmail-user --replication-policy=automatic --project base-502702
+#   printf '%s' '<Gmail 信箱>' | gcloud secrets versions add base-gmail-user --data-file=- --project base-502702
+#   gcloud secrets create base-gmail-app-password --replication-policy=automatic --project base-502702
+#   printf '%s' '<Gmail 應用程式密碼>' | gcloud secrets versions add base-gmail-app-password --data-file=- --project base-502702
+#   gcloud projects add-iam-policy-binding base-502702 \
+#       --member=serviceAccount:316015752010-compute@developer.gserviceaccount.com \
+#       --role=roles/secretmanager.secretAccessor
 #
 # MSSQL 連線機制:
 #   後端以 Cloud SQL Java Connector (socketFactory) 連 Cloud SQL for SQL Server，
@@ -54,6 +63,9 @@ substitutions:
   _DB_USERNAME: base_20260716_01
   _DB_PASSWORD: 'Base20260716#01!'
   _JWT_SECRET: 'base-2026-gcp-test-jwt-secret-please-rotate-0123456789abcdef'
+  # Secret Manager 中的 secret 名稱；值不會進入 Cloud Build 設定或映像檔。
+  _EMAIL_USER_SECRET: base-gmail-user
+  _EMAIL_PASSWORD_SECRET: base-gmail-app-password
 
 steps:
   # Step 0: 確保 Artifact Registry repo 存在 (冪等，全新專案也可一鍵部署)
@@ -85,7 +97,7 @@ steps:
     id: 'push-server'
     waitFor: ['build-server']
 
-  # Step 3: 部署後端至 Cloud Run (注入 MSSQL/Cloud SQL 連線與 JWT 環境變數)
+  # Step 3: 部署後端至 Cloud Run (注入 MSSQL/Cloud SQL、JWT 與 Gmail SMTP 設定)
   #   DB_URL 使用 Cloud SQL Java Connector 的 socketFactory 機制;
   #   encrypt=false 是因加密通道已由 Connector 建立，避免與 JDBC driver TLS 重複交涉。
   #   CORS 先指向可預期的前端網址，前端部署完成後由 Step「update-server-cors」校正。
@@ -108,6 +120,7 @@ steps:
           --max-instances=5 \
           --timeout=300 \
           --allow-unauthenticated \
+          --set-secrets="EMAIL_USER=${_EMAIL_USER_SECRET}:latest,EMAIL_PASSWORD=${_EMAIL_PASSWORD_SECRET}:latest" \
           --set-env-vars="^##^DB_URL=$${DB_URL}##DB_USERNAME=${_DB_USERNAME}##DB_PASSWORD=${_DB_PASSWORD}##JWT_SECRET=${_JWT_SECRET}##CORS_ALLOWED_ORIGIN=$${CLIENT_ORIGIN}"
     id: 'deploy-server'
     waitFor: ['push-server']

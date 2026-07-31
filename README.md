@@ -132,3 +132,5 @@ gcloud builds submit --config cloudbuild.yaml --project base-502702
   後端透過 Cloud SQL Java Connector（IAM 加密通道）連線，毋須公網白名單。
 - 前置作業（API 啟用、Artifact Registry、Cloud SQL 建立、IAM 角色）詳見
   [cloudbuild.yaml](cloudbuild.yaml) 頂部註解，僅需執行一次。
+- Gmail SMTP 使用 Secret Manager 的 `base-gmail-user` 與 `base-gmail-app-password`，
+  部署時注入為 `EMAIL_USER`／`EMAIL_PASSWORD`；請先依 `cloudbuild.yaml` 頂部指令建立並授權兩個 Secret。
