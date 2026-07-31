@@ -82,9 +82,24 @@
       "event": [{ "listen": "test", "script": { "exec": ["pm.test('查詢命中唯一任務',()=>{const d=pm.response.json().data; pm.expect(d.length).to.eql(1); pm.expect(d[0].id).to.eql(pm.collectionVariables.get('taskId'));});"] } }]
     },
     {
-      "name": "13 員工退回任務",
-      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"reason\":\"Postman 退回原因\"}" }, "url": "{{baseUrl}}/task-assignment/tasks/{{taskId}}/return" },
-      "event": [{ "listen": "test", "script": { "exec": ["pm.test('退回狀態與原因正確',()=>{const d=pm.response.json().data; pm.expect(d.status).to.eql('RETURNED'); pm.expect(d.returnReason).to.eql('Postman 退回原因');});"] } }]
+      "name": "13 查詢我的任務",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }], "url": "{{baseUrl}}/task-assignment/inbox?name=Postman&sortBy=deadline&direction=asc" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('我的任務回應正確',()=>{const d=pm.response.json().data; pm.expect(d.length).to.eql(1); pm.expect(d[0].workStatus).to.eql('PENDING'); pm.expect(d[0].progressPercent).to.eql(10);});"] } }]
+    },
+    {
+      "name": "14 更新工作進度",
+      "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"workStatus\":\"COMPLETED\",\"progressContent\":\"Postman 已完成工作\",\"progressPercent\":80}" }, "url": "{{baseUrl}}/task-assignment/tasks/{{taskId}}/progress" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('進度回應正確',()=>{const d=pm.response.json().data; pm.expect(d.workStatus).to.eql('COMPLETED'); pm.expect(d.progressPercent).to.eql(80);});"] } }]
+    },
+    {
+      "name": "15 上傳附件",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"fileName\":\"postman.txt\",\"contentType\":\"text/plain\",\"base64Content\":\"b2s=\"}" }, "url": "{{baseUrl}}/task-assignment/tasks/{{taskId}}/attachments" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('附件回應正確',()=>{const d=pm.response.json().data; pm.expect(d.fileName).to.eql('postman.txt'); pm.expect(d.fileSize).to.eql(2);});"] } }]
+    },
+    {
+      "name": "16 提交審核",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }], "url": "{{baseUrl}}/task-assignment/tasks/{{taskId}}/submit" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('提交審核不要求百分百',()=>{const d=pm.response.json().data; pm.expect(d.submittedAt).to.be.a('string'); pm.expect(d.progressPercent).to.eql(80);});"] } }]
     }
   ]
 }

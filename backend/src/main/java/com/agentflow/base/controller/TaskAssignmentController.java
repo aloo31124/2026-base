@@ -2,11 +2,15 @@ package com.agentflow.base.controller;
 
 import com.agentflow.base.model.dto.ApiResponse;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.AssigneeResponse;
+import com.agentflow.base.model.dto.TaskAssignmentDtos.AttachmentRequest;
+import com.agentflow.base.model.dto.TaskAssignmentDtos.AttachmentResponse;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.CompanyBindingRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.ContextResponse;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.EmployeeBindingRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.EmployeeBindingResponse;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.EmployeeResponse;
+import com.agentflow.base.model.dto.TaskAssignmentDtos.ExtensionRequest;
+import com.agentflow.base.model.dto.TaskAssignmentDtos.ProgressRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.ReturnRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.TaskRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.TaskResponse;
@@ -149,8 +153,49 @@ public class TaskAssignmentController {
 
     /** 查詢登入者收件匣。 */
     @GetMapping("/inbox")
-    public ApiResponse<List<TaskResponse>> inbox(Principal principal) {
-        return ApiResponse.ok("我的任務查詢成功。", service.inbox(principal.getName()));
+    public ApiResponse<List<TaskResponse>> inbox(
+        Principal principal,
+        @RequestParam(defaultValue = "") String name,
+        @RequestParam(required = false) Instant assignedFrom,
+        @RequestParam(required = false) Instant assignedTo,
+        @RequestParam(required = false) Instant deadlineFrom,
+        @RequestParam(required = false) Instant deadlineTo,
+        @RequestParam(defaultValue = "assignedAt") String sortBy,
+        @RequestParam(defaultValue = "desc") String direction
+    ) {
+        return ApiResponse.ok("我的任務查詢成功。", service.findInbox(
+            principal.getName(), name, assignedFrom, assignedTo, deadlineFrom, deadlineTo, sortBy, direction
+        ));
+    }
+
+    /** 查詢登入者收到的單筆任務。 */
+    @GetMapping("/inbox/{id}")
+    public ApiResponse<TaskResponse> inboxTask(Principal principal, @PathVariable UUID id) {
+        return ApiResponse.ok("我的任務明細查詢成功。", service.inboxTask(principal.getName(), id));
+    }
+
+    /** 更新任務工作進度。 */
+    @PutMapping("/tasks/{id}/progress")
+    public ApiResponse<TaskResponse> updateProgress(Principal principal, @PathVariable UUID id, @Valid @RequestBody ProgressRequest request) {
+        return ApiResponse.ok("工作進度更新成功。", service.updateProgress(principal.getName(), id, request));
+    }
+
+    /** 新增任務附件。 */
+    @PostMapping("/tasks/{id}/attachments")
+    public ApiResponse<AttachmentResponse> addAttachment(Principal principal, @PathVariable UUID id, @Valid @RequestBody AttachmentRequest request) {
+        return ApiResponse.ok("任務附件上傳成功。", service.addAttachment(principal.getName(), id, request));
+    }
+
+    /** 提交任務供原指派者審核。 */
+    @PostMapping("/tasks/{id}/submit")
+    public ApiResponse<TaskResponse> submit(Principal principal, @PathVariable UUID id) {
+        return ApiResponse.ok("任務已提交審核。", service.submitForReview(principal.getName(), id));
+    }
+
+    /** 申請任務延期。 */
+    @PostMapping("/tasks/{id}/extension-requests")
+    public ApiResponse<TaskResponse> requestExtension(Principal principal, @PathVariable UUID id, @Valid @RequestBody ExtensionRequest request) {
+        return ApiResponse.ok("延期申請已送出。", service.requestExtension(principal.getName(), id, request));
     }
 
     /** 退回任務。 */

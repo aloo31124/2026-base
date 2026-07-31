@@ -36,4 +36,20 @@ public interface AssignedTaskDao extends JpaRepository<AssignedTask, UUID> {
 
     @EntityGraph(attributePaths = {"creator", "assignee"})
     List<AssignedTask> findAllByAssigneeOrderByAssignedAtDesc(UserAccount assignee);
+
+    @EntityGraph(attributePaths = {"creator", "assignee"})
+    @Query("""
+        select task from AssignedTask task
+        where task.assignee = :assignee
+          and (:name = '' or lower(task.name) like concat('%', :name, '%'))
+          and (:assignedFrom is null or task.assignedAt >= :assignedFrom)
+          and (:assignedTo is null or task.assignedAt <= :assignedTo)
+          and (:deadlineFrom is null or task.deadline >= :deadlineFrom)
+          and (:deadlineTo is null or task.deadline <= :deadlineTo)
+        """)
+    List<AssignedTask> searchReceivedTasks(
+        @Param("assignee") UserAccount assignee, @Param("name") String name,
+        @Param("assignedFrom") Instant assignedFrom, @Param("assignedTo") Instant assignedTo,
+        @Param("deadlineFrom") Instant deadlineFrom, @Param("deadlineTo") Instant deadlineTo, Sort sort
+    );
 }

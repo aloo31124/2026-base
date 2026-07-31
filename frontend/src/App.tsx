@@ -11,6 +11,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import RegistrationManagementPage from './pages/RegistrationManagementPage';
 import CompanySupervisorManagementPage from './pages/CompanySupervisorManagementPage';
 import TaskAssignmentPage from './pages/TaskAssignmentPage';
+import MyTasksPage from './pages/MyTasksPage';
+import MyTaskEditPage from './pages/MyTaskEditPage';
 
 function Guard({
   children,
@@ -48,6 +50,8 @@ export default function App() {
       </Guard>
     } />
     <Route path="/task-assignment" element={<Guard><TaskAssignmentPage /></Guard>} />
+    <Route path="/my-tasks" element={<Guard><MyTasksPage /></Guard>} />
+    <Route path="/my-tasks/:id" element={<Guard><MyTaskEditPage /></Guard>} />
     <Route path="/test/testTemp/" element={<Guard><TestPage /></Guard>} />
     <Route path="/unauthorized" element={<UnauthorizedPage />} />
     <Route path="*" element={<Navigate to="/users" replace />} />

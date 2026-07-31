@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info: { title: 我的任務 API, version: 1.0.0 }
+paths:
+  /api/task-assignment/inbox:
+    get: { summary: 查詢並排序我的任務 }
+  /api/task-assignment/tasks/{id}/progress:
+    put: { summary: 更新工作狀態、內容及進度 }
+  /api/task-assignment/tasks/{id}/attachments:
+    post: { summary: 上傳圖片、附件或影片 }
+  /api/task-assignment/tasks/{id}/submit:
+    post: { summary: 提交已完成任務供指派者審核 }
+  /api/task-assignment/tasks/{id}/extension-requests:
+    post: { summary: 填寫原因申請延期 }

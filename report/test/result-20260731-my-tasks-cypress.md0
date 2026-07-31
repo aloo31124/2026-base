@@ -1,0 +1,32 @@
+# 我的任務 Cypress 測試報告
+
+## 目錄
+
+- [執行摘要](#執行摘要) — 1 個完整 E2E scenario
+- [Task 與 Checklist 對照](#task-與-checklist-對照) — 前端功能覆蓋
+- [結論](#結論) — 完成率 100%
+
+## 執行摘要
+
+- 日期：2026-07-31
+- Spec：`frontend/cypress/e2e/my-tasks.cy.ts`
+- 指令：`npm run test:e2e:my-tasks`
+- Browser：Electron 138 headless
+- Tests：1 passing、0 failing、0 pending、0 skipped
+- Duration：2 秒
+
+## Task 與 Checklist 對照
+
+| 驗收項目 | 證據 | 結果 |
+|---|---|---|
+| 我的任務名稱查詢 | 列表只顯示建立的指定任務 | 通過 |
+| 編輯頁導覽 | icon 按鈕開啟 `/my-tasks/{id}` | 通過 |
+| 狀態、內容與 10% 進度 | 保存 `COMPLETED`、內容、80% | 通過 |
+| 圖片／附件／影片入口 | 實際上傳 `evidence.txt` 並顯示 | 通過 |
+| 提交審核 | 80% 且已完成可提交並返回列表 | 通過 |
+
+退回、延期、越權與錯誤邊界由 MockMvc 整合測試覆蓋；Cypress 負責使用者核心操作流程。
+
+## 結論
+
+Cypress 完成率 **100%（1/1）**，對應 tasks 與 checklist 的前端核心流程全數通過。

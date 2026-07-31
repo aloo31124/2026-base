@@ -141,6 +141,68 @@ class TaskAssignmentIntegrationTest {
             .andExpect(jsonPath("$.message", is("[任務指派] [api] 無主管權限。")));
     }
 
+    /** 驗證我的任務進度、附件、提交審核與延期申請。 */
+    @Test
+    void employeeCanUpdateProgressAttachSubmitAndRequestExtension() throws Exception {
+        String adminToken = token("admin", "admin123");
+        JsonNode company = createCompany(adminToken);
+        JsonNode manager = createUser(adminToken, "我的任務主管");
+        JsonNode employee = createUser(adminToken, "我的任務員工");
+        JsonNode supervisor = createSupervisor(adminToken, manager.path("id").asText());
+        createSupervisorCompanyBinding(adminToken, company.path("id").asText(), supervisor.path("id").asText());
+        String managerToken = token(manager.path("username").asText(), "password123");
+        String employeeToken = token(employee.path("username").asText(), "password123");
+
+        mvc.perform(post(API + "/company-bindings").header("Authorization", bearer(employeeToken))
+                .contentType(MediaType.APPLICATION_JSON).content(json(Map.of("companyName", company.path("name").asText()))))
+            .andExpect(status().isOk());
+        mvc.perform(post(API + "/employee-bindings").header("Authorization", bearer(managerToken))
+                .contentType(MediaType.APPLICATION_JSON).content(json(Map.of("employeeId", employee.path("id").asText()))))
+            .andExpect(status().isOk());
+
+        JsonNode task = readData(mvc.perform(post(API + "/tasks").header("Authorization", bearer(managerToken))
+                .contentType(MediaType.APPLICATION_JSON).content(json(Map.of(
+                    "name", "我的任務整合測試", "content", "原始工作內容",
+                    "deadline", Instant.now().plus(2, ChronoUnit.DAYS).toString(),
+                    "assigneeId", employee.path("id").asText()))))
+            .andExpect(status().isOk()));
+        String taskPath = API + "/tasks/" + task.path("id").asText();
+
+        mvc.perform(get(API + "/inbox").queryParam("name", "整合").queryParam("sortBy", "deadline")
+                .queryParam("direction", "asc").header("Authorization", bearer(employeeToken)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data", hasSize(1)))
+            .andExpect(jsonPath("$.data[0].workStatus", is("PENDING")))
+            .andExpect(jsonPath("$.data[0].progressPercent", is(10)));
+
+        mvc.perform(put(taskPath + "/progress").header("Authorization", bearer(employeeToken))
+                .contentType(MediaType.APPLICATION_JSON).content(json(Map.of(
+                    "workStatus", "COMPLETED", "progressContent", "已完成核心工作", "progressPercent", 80))))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.workStatus", is("COMPLETED")))
+            .andExpect(jsonPath("$.data.progressPercent", is(80)));
+
+        mvc.perform(post(taskPath + "/attachments").header("Authorization", bearer(employeeToken))
+                .contentType(MediaType.APPLICATION_JSON).content(json(Map.of(
+                    "fileName", "evidence.txt", "contentType", "text/plain", "base64Content", "b2s="))))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.fileName", is("evidence.txt")))
+            .andExpect(jsonPath("$.data.fileSize", is(2)));
+
+        mvc.perform(post(taskPath + "/submit").header("Authorization", bearer(employeeToken)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.submittedAt").isNotEmpty())
+            .andExpect(jsonPath("$.data.progressPercent", is(80)));
+
+        JsonNode extensionTask = readData(mvc.perform(post(API + "/tasks").header("Authorization", bearer(managerToken))
+                .contentType(MediaType.APPLICATION_JSON).content(json(Map.of(
+                    "name", "延期任務", "content", "需要延期",
+                    "deadline", Instant.now().plus(3, ChronoUnit.DAYS).toString(),
+                    "assigneeId", employee.path("id").asText()))))
+            .andExpect(status().isOk()));
+        mvc.perform(post(API + "/tasks/" + extensionTask.path("id").asText() + "/extension-requests")
+                .header("Authorization", bearer(employeeToken)).contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("reason", "等待外部資料"))))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.extensionRequestedAt").isNotEmpty())
+            .andExpect(jsonPath("$.data.extensionReason", is("等待外部資料")));
+    }
+
     /** 透過管理 API 建立唯一公司。 */
     private JsonNode createCompany(String token) throws Exception {
         String name = "任務公司-" + UUID.randomUUID();

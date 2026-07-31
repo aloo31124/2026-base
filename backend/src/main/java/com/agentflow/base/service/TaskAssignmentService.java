@@ -1,6 +1,7 @@
 package com.agentflow.base.service;
 
 import com.agentflow.base.dao.AssignedTaskDao;
+import com.agentflow.base.dao.TaskAttachmentDao;
 import com.agentflow.base.dao.CompanyDao;
 import com.agentflow.base.dao.CompanyMembershipDao;
 import com.agentflow.base.dao.SupervisorEmployeeBindingDao;
@@ -10,22 +11,29 @@ import com.agentflow.base.dao.UserRoleDao;
 import com.agentflow.base.exception.BusinessException;
 import com.agentflow.base.model.bo.AssignedTask;
 import com.agentflow.base.model.bo.AssignedTask.Status;
+import com.agentflow.base.model.bo.AssignedTask.WorkStatus;
+import com.agentflow.base.model.bo.TaskAttachment;
 import com.agentflow.base.model.bo.Company;
 import com.agentflow.base.model.bo.CompanyMembership;
 import com.agentflow.base.model.bo.CompanyMembership.MemberType;
 import com.agentflow.base.model.bo.SupervisorEmployeeBinding;
 import com.agentflow.base.model.bo.UserAccount;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.AssigneeResponse;
+import com.agentflow.base.model.dto.TaskAssignmentDtos.AttachmentRequest;
+import com.agentflow.base.model.dto.TaskAssignmentDtos.AttachmentResponse;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.CompanyBindingRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.ContextResponse;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.EmployeeBindingRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.EmployeeBindingResponse;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.EmployeeResponse;
+import com.agentflow.base.model.dto.TaskAssignmentDtos.ExtensionRequest;
+import com.agentflow.base.model.dto.TaskAssignmentDtos.ProgressRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.ReturnRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.TaskRequest;
 import com.agentflow.base.model.dto.TaskAssignmentDtos.TaskResponse;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,6 +61,7 @@ public class TaskAssignmentService {
     private final SupervisorProfileDao supervisorDao;
     private final SupervisorEmployeeBindingDao employeeBindingDao;
     private final AssignedTaskDao taskDao;
+    private final TaskAttachmentDao attachmentDao;
 
     /** 注入任務指派所需的資料存取元件。 */
     public TaskAssignmentService(
@@ -62,7 +71,8 @@ public class TaskAssignmentService {
         CompanyMembershipDao membershipDao,
         SupervisorProfileDao supervisorDao,
         SupervisorEmployeeBindingDao employeeBindingDao,
-        AssignedTaskDao taskDao
+        AssignedTaskDao taskDao,
+        TaskAttachmentDao attachmentDao
     ) {
         this.userDao = userDao;
         this.userRoleDao = userRoleDao;
@@ -71,6 +81,7 @@ public class TaskAssignmentService {
         this.supervisorDao = supervisorDao;
         this.employeeBindingDao = employeeBindingDao;
         this.taskDao = taskDao;
+        this.attachmentDao = attachmentDao;
     }
 
     /** 取得目前登入者的公司與角色情境。 */
@@ -271,6 +282,90 @@ public class TaskAssignmentService {
             .toList();
     }
 
+    /** 依條件查詢登入者收到的任務並採白名單排序。 */
+    @Transactional(readOnly = true)
+    public List<TaskResponse> findInbox(
+        String username, String name, Instant assignedFrom, Instant assignedTo,
+        Instant deadlineFrom, Instant deadlineTo, String sortBy, String direction
+    ) {
+        validateRange(assignedFrom, assignedTo, "指派日期");
+        validateRange(deadlineFrom, deadlineTo, "期限日期");
+        String property = SORT_FIELDS.get(sortBy);
+        if (property == null || "assignee.username".equals(property)) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "不支援的排序欄位。");
+        }
+        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        return taskDao.searchReceivedTasks(
+            currentUser(username), normalize(name), assignedFrom, assignedTo,
+            deadlineFrom, deadlineTo, Sort.by(sortDirection, property)
+        ).stream().map(this::toTaskResponse).toList();
+    }
+
+    /** 取得登入者收到的單筆任務。 */
+    @Transactional(readOnly = true)
+    public TaskResponse inboxTask(String username, UUID id) {
+        return toTaskResponse(receivedTask(currentUser(username), id));
+    }
+
+    /** 更新登入者收到任務的工作進度。 */
+    public TaskResponse updateProgress(String username, UUID id, ProgressRequest request) {
+        AssignedTask task = receivedTask(currentUser(username), id);
+        int progress = request.progressPercent();
+        if (progress < 10 || progress > 100 || progress % 10 != 0) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "進度只能是 10% 至 100% 的 10% 間距值。");
+        }
+        WorkStatus workStatus;
+        try {
+            workStatus = WorkStatus.valueOf(request.workStatus());
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "不支援的工作狀態。");
+        }
+        task.updateProgress(workStatus, optional(request.progressContent()), progress);
+        return toTaskResponse(task);
+    }
+
+    /** 上傳任務附件並限制單檔 10 MB。 */
+    public AttachmentResponse addAttachment(String username, UUID id, AttachmentRequest request) {
+        UserAccount user = currentUser(username);
+        AssignedTask task = receivedTask(user, id);
+        byte[] content;
+        try {
+            content = Base64.getDecoder().decode(request.base64Content());
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "附件內容不是有效的 Base64。");
+        }
+        if (content.length == 0 || content.length > 10 * 1024 * 1024) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "附件必須大於 0 且不得超過 10 MB。");
+        }
+        TaskAttachment attachment = attachmentDao.save(new TaskAttachment(
+            task, user, request.fileName().trim(), request.contentType().trim(), content
+        ));
+        return toAttachmentResponse(attachment);
+    }
+
+    /** 提交已完成任務給原指派者審核。 */
+    public TaskResponse submitForReview(String username, UUID id) {
+        AssignedTask task = receivedTask(currentUser(username), id);
+        if (task.getStatus() != Status.ASSIGNED) {
+            throw conflict("目前任務不可提交審核。");
+        }
+        if (task.getWorkStatus() != WorkStatus.COMPLETED) {
+            throw conflict("工作狀態必須切換為已完成才可提交審核。");
+        }
+        task.submitForReview();
+        return toTaskResponse(task);
+    }
+
+    /** 保存登入者的延期申請原因。 */
+    public TaskResponse requestExtension(String username, UUID id, ExtensionRequest request) {
+        AssignedTask task = receivedTask(currentUser(username), id);
+        if (task.getStatus() != Status.ASSIGNED) {
+            throw conflict("只有指派中的任務可申請延期。");
+        }
+        task.requestExtension(request.reason().trim());
+        return toTaskResponse(task);
+    }
+
     /** 由受派人退回指派中的任務。 */
     public TaskResponse returnTask(String username, UUID id, ReturnRequest request) {
         UserAccount assignee = currentUser(username);
@@ -340,6 +435,16 @@ public class TaskAssignmentService {
         return task;
     }
 
+    /** 驗證任務屬於目前受派人。 */
+    private AssignedTask receivedTask(UserAccount assignee, UUID id) {
+        AssignedTask task = taskDao.findById(id)
+            .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "找不到任務。"));
+        if (!task.getAssignee().getId().equals(assignee.getId())) {
+            throw new BusinessException(HttpStatus.FORBIDDEN, "只能操作自己收到的任務。");
+        }
+        return task;
+    }
+
     /** 驗證日期區間順序。 */
     private void validateRange(Instant from, Instant to, String label) {
         if (from != null && to != null && from.isAfter(to)) {
@@ -377,8 +482,22 @@ public class TaskAssignmentService {
             task.getStatus().name(),
             task.getReturnReason(),
             task.getReturnedAt(),
+            task.getWorkStatus().name(),
+            task.getProgressContent(),
+            task.getProgressPercent(),
+            task.getSubmittedAt(),
+            task.getExtensionReason(),
+            task.getExtensionRequestedAt(),
+            attachmentDao.findAllByTaskOrderByCreatedAtAsc(task).stream().map(this::toAttachmentResponse).toList(),
             task.getCreatedAt(),
             task.getUpdatedAt()
+        );
+    }
+
+    private AttachmentResponse toAttachmentResponse(TaskAttachment attachment) {
+        return new AttachmentResponse(
+            attachment.getId(), attachment.getFileName(), attachment.getContentType(),
+            attachment.getFileSize(), attachment.getCreatedAt()
         );
     }
 

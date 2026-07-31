@@ -25,6 +25,10 @@ public final class TaskAssignmentDtos {
         @NotNull UUID assigneeId
     ) {}
     public record ReturnRequest(@NotBlank @Size(max = 500) String reason) {}
+    public record ProgressRequest(@NotBlank String workStatus, @Size(max = 4000) String progressContent, int progressPercent) {}
+    public record ExtensionRequest(@NotBlank @Size(max = 500) String reason) {}
+    public record AttachmentRequest(@NotBlank @Size(max = 255) String fileName, @NotBlank @Size(max = 120) String contentType, @NotBlank String base64Content) {}
+    public record AttachmentResponse(UUID id, String fileName, String contentType, long fileSize, Instant createdAt) {}
     public record TaskResponse(
         UUID id,
         String name,
@@ -39,6 +43,13 @@ public final class TaskAssignmentDtos {
         String status,
         String returnReason,
         Instant returnedAt,
+        String workStatus,
+        String progressContent,
+        int progressPercent,
+        Instant submittedAt,
+        String extensionReason,
+        Instant extensionRequestedAt,
+        List<AttachmentResponse> attachments,
         Instant createdAt,
         Instant updatedAt
     ) {}

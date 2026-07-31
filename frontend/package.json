@@ -12,6 +12,7 @@
     "test:e2e:registration-management": "cypress run --spec cypress/e2e/registration-management.cy.ts",
     "test:e2e:company-supervisor-management": "cypress run --spec cypress/e2e/company-supervisor-management.cy.ts",
     "test:e2e:task-assignment": "cypress run --spec cypress/e2e/task-assignment.cy.ts",
+    "test:e2e:my-tasks": "cypress run --spec cypress/e2e/my-tasks.cy.ts",
     "test:e2e:open": "cypress open"
   },
   "dependencies": {
