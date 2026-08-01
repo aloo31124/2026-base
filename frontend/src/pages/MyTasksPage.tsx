@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../app/api';
 import AppShell from '../components/AppShell';
+import ActionIconButton from '../components/ActionIconButton';
 
 export type TaskAttachment = { id: string; fileName: string; contentType: string; fileSize: number; createdAt: string };
 export type MyTask = {
@@ -67,7 +68,7 @@ export default function MyTasksPage() {
       <button className="btn primary" data-testid="my-task-search" type="submit">查詢</button>
     </form>
     <section className="card table-card"><table><thead><tr><th>任務</th><th>指派者</th><th>指派日期</th><th>期限</th><th>工作狀態</th><th>進度</th><th>操作</th></tr></thead><tbody>
-      {tasks.map(task => <tr data-testid="my-task-row" key={task.id}><td><strong>{task.name}</strong></td><td>{task.creatorName}</td><td>{new Date(task.assignedAt).toLocaleString()}</td><td>{new Date(task.deadline).toLocaleString()}</td><td><span className={`status ${task.workStatus.toLowerCase()}`}>{task.workStatus}</span></td><td>{task.progressPercent}%</td><td><div className="icon-actions"><button title="提交審核" aria-label="提交審核" onClick={() => void action(task, 'submit')}>✓</button><button title="退回" aria-label="退回" onClick={() => void action(task, 'return')}>↩</button><button title="申請延期" aria-label="申請延期" onClick={() => void action(task, 'extend')}>◷</button><button title="編輯" aria-label="編輯" data-testid="my-task-edit" onClick={() => navigate(`/my-tasks/${task.id}`)}>✎</button></div></td></tr>)}
+      {tasks.map(task => <tr data-testid="my-task-row" key={task.id}><td data-label="任務"><strong>{task.name}</strong></td><td data-label="指派者">{task.creatorName}</td><td data-label="指派日期">{new Date(task.assignedAt).toLocaleString()}</td><td data-label="期限">{new Date(task.deadline).toLocaleString()}</td><td data-label="工作狀態"><span className={`status ${task.workStatus.toLowerCase()}`}>{task.workStatus}</span></td><td data-label="進度">{task.progressPercent}%</td><td data-label="操作"><div className="icon-actions"><ActionIconButton label="提交審核" icon="✓" onClick={() => void action(task, 'submit')} /><ActionIconButton label="退回" icon="↩" tone="danger" onClick={() => void action(task, 'return')} /><ActionIconButton label="申請延期" icon="◷" onClick={() => void action(task, 'extend')} /><ActionIconButton label="編輯" icon="✎" data-testid="my-task-edit" onClick={() => navigate(`/my-tasks/${task.id}`)} /></div></td></tr>)}
     </tbody></table>{tasks.length === 0 && <p className="empty-state">目前沒有符合條件的任務。</p>}</section>
     {error && <p className="management-status error" data-testid="my-task-error">{error}</p>}
   </div></AppShell>;

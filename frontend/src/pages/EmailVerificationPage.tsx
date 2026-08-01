@@ -125,13 +125,13 @@ export default function EmailVerificationPage() {
           : <div className="mail-log-table-wrap"><table>
             <thead><tr><th>收件者</th><th>用途</th><th>狀態</th><th>時間</th><th>說明</th></tr></thead>
             <tbody>{logs.map(log => <tr key={log.id} data-testid="mail-log-row">
-              <td>{log.maskedRecipient}</td>
-              <td>{purposeLabel(log.purpose)}</td>
-              <td><span className={`tag ${log.status === 'SUCCESS' ? 'managed' : 'failed'}`}>
+              <td data-label="收件者">{log.maskedRecipient}</td>
+              <td data-label="用途">{purposeLabel(log.purpose)}</td>
+              <td data-label="狀態"><span className={`tag ${log.status === 'SUCCESS' ? 'managed' : 'failed'}`}>
                 {log.status === 'SUCCESS' ? '成功' : '失敗'}
               </span></td>
-              <td>{new Date(log.completedAt).toLocaleString('zh-TW')}</td>
-              <td>{log.errorSummary ?? '—'}</td>
+              <td data-label="時間">{new Date(log.completedAt).toLocaleString('zh-TW')}</td>
+              <td data-label="說明">{log.errorSummary ?? '—'}</td>
             </tr>)}</tbody>
           </table></div>}
       </section>

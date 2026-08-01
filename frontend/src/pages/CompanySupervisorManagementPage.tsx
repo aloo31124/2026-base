@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { api } from '../app/api';
 import AppShell from '../components/AppShell';
+import ActionIconButton from '../components/ActionIconButton';
 
 type Tab = 'companies' | 'supervisors' | 'bindings';
 type BindingKind = 'supervisor' | 'employee';
@@ -334,11 +335,11 @@ export default function CompanySupervisorManagementPage() {
           </form>
           <table><thead><tr><th>公司名稱</th><th>說明</th><th>操作</th></tr></thead>
             <tbody>{companies.map(company => <tr key={company.id} data-testid="company-row">
-              <td><strong>{company.name}</strong></td><td>{company.description || '—'}</td>
-              <td>
-                <button className="btn secondary" onClick={() => setCompanyForm({ id: company.id, name: company.name, description: company.description ?? '' })}>修改</button>
-                <button className="btn danger" onClick={() => void deleteCompany(company.id)}>刪除</button>
-              </td>
+              <td data-label="公司名稱"><strong>{company.name}</strong></td><td data-label="說明">{company.description || '—'}</td>
+              <td data-label="操作"><div className="table-actions">
+                <ActionIconButton label="修改公司" icon="✎" onClick={() => setCompanyForm({ id: company.id, name: company.name, description: company.description ?? '' })} />
+                <ActionIconButton label="刪除公司" icon="×" tone="danger" onClick={() => void deleteCompany(company.id)} />
+              </div></td>
             </tr>)}</tbody>
           </table>
           {companies.length === 0 && <p className="empty-state">尚無符合條件的公司。</p>}
@@ -368,12 +369,12 @@ export default function CompanySupervisorManagementPage() {
           </form>
           <table><thead><tr><th>主管</th><th>職稱</th><th>公司</th><th>操作</th></tr></thead>
             <tbody>{supervisors.map(supervisor => <tr key={supervisor.id} data-testid="supervisor-row">
-              <td><strong>{supervisor.fullName}</strong><small>{supervisor.username} · {supervisor.email}</small></td>
-              <td><span className="tag">{supervisor.title}</span></td><td>{supervisor.companyName || '尚未綁定'}</td>
-              <td>
-                <button className="btn secondary" onClick={() => setSupervisorForm({ id: supervisor.id, userId: supervisor.userId, title: supervisor.title })}>修改</button>
-                <button className="btn danger" disabled={Boolean(supervisor.companyId)} onClick={() => void deleteSupervisor(supervisor.id)}>刪除</button>
-              </td>
+              <td data-label="主管"><strong>{supervisor.fullName}</strong><small>{supervisor.username} · {supervisor.email}</small></td>
+              <td data-label="職稱"><span className="tag">{supervisor.title}</span></td><td data-label="公司">{supervisor.companyName || '尚未綁定'}</td>
+              <td data-label="操作"><div className="table-actions">
+                <ActionIconButton label="修改主管" icon="✎" onClick={() => setSupervisorForm({ id: supervisor.id, userId: supervisor.userId, title: supervisor.title })} />
+                <ActionIconButton label="刪除主管" icon="×" tone="danger" disabled={Boolean(supervisor.companyId)} onClick={() => void deleteSupervisor(supervisor.id)} />
+              </div></td>
             </tr>)}</tbody>
           </table>
           {supervisors.length === 0 && <p className="empty-state">尚無符合條件的主管。</p>}
@@ -425,10 +426,10 @@ export default function CompanySupervisorManagementPage() {
             </form>
             <table><thead><tr><th>公司</th><th>主管</th><th>職稱</th><th>操作</th></tr></thead>
               <tbody>{bindings.map(binding => <tr key={binding.id} data-testid="binding-row">
-                <td><strong>{binding.companyName}</strong></td>
-                <td>{binding.supervisorName}<small>{binding.supervisorUsername}</small></td>
-                <td><span className="tag managed">{binding.title}</span></td>
-                <td><button className="btn danger" onClick={() => void deleteBinding(binding.id)}>取消綁定</button></td>
+                <td data-label="公司"><strong>{binding.companyName}</strong></td>
+                <td data-label="主管">{binding.supervisorName}<small>{binding.supervisorUsername}</small></td>
+                <td data-label="職稱"><span className="tag managed">{binding.title}</span></td>
+                <td data-label="操作"><div className="table-actions"><ActionIconButton label="取消主管綁定" icon="×" tone="danger" onClick={() => void deleteBinding(binding.id)} /></div></td>
               </tr>)}</tbody>
             </table>
             {bindings.length === 0 && <p className="empty-state">尚無符合條件的主管綁定。</p>}
@@ -495,10 +496,10 @@ export default function CompanySupervisorManagementPage() {
             </form>
             <table><thead><tr><th>公司</th><th>員工</th><th>信箱</th><th>操作</th></tr></thead>
               <tbody>{employeeBindings.map(binding => <tr key={binding.id} data-testid="employee-binding-row">
-                <td><strong>{binding.companyName}</strong></td>
-                <td>{binding.employeeName}<small>{binding.employeeUsername}</small></td>
-                <td>{binding.employeeEmail}</td>
-                <td><button className="btn danger" onClick={() => void deleteEmployeeBinding(binding.id)}>取消綁定</button></td>
+                <td data-label="公司"><strong>{binding.companyName}</strong></td>
+                <td data-label="員工">{binding.employeeName}<small>{binding.employeeUsername}</small></td>
+                <td data-label="信箱">{binding.employeeEmail}</td>
+                <td data-label="操作"><div className="table-actions"><ActionIconButton label="取消員工綁定" icon="×" tone="danger" onClick={() => void deleteEmployeeBinding(binding.id)} /></div></td>
               </tr>)}</tbody>
             </table>
             {employeeBindings.length === 0 && <p className="empty-state">尚無符合條件的員工綁定。</p>}

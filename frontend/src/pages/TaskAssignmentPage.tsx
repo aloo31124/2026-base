@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { api } from '../app/api';
 import AppShell from '../components/AppShell';
+import ActionIconButton from '../components/ActionIconButton';
 
 type Tab = 'tasks' | 'members' | 'inbox';
 interface Context { userId: string; username: string; roles: string[]; companyId?: string; companyName?: string }
@@ -179,11 +180,11 @@ export default function TaskAssignmentPage() {
           </form>
           <div className="card management-list"><table><thead><tr><th>員工</th><th>信箱</th><th>操作</th></tr></thead>
             <tbody>{bindings.map(binding => <tr data-testid="employee-binding-row" key={binding.id}>
-              <td>{binding.employeeName}</td><td>{binding.employeeEmail}</td>
-              <td><button className="btn danger" onClick={() => void mutate(
+              <td data-label="員工">{binding.employeeName}</td><td data-label="信箱">{binding.employeeEmail}</td>
+              <td data-label="操作"><div className="table-actions"><ActionIconButton label="取消員工綁定" icon="×" tone="danger" onClick={() => void mutate(
                 () => api(`/task-assignment/employee-bindings/${binding.id}`, { method: 'DELETE' }),
                 '員工綁定已取消。',
-              )}>取消綁定</button></td>
+              )} /></div></td>
             </tr>)}</tbody></table>
             {bindings.length === 0 && <p className="empty-state">尚未綁定員工。</p>}
           </div>
@@ -210,11 +211,11 @@ export default function TaskAssignmentPage() {
               <button data-testid="task-search-submit" className="btn secondary">查詢</button>
             </form>
             <table><thead><tr><th>任務</th><th>受派人</th><th>期限</th><th>狀態</th><th>操作</th></tr></thead>
-              <tbody>{tasks.map(task => <tr data-testid="task-row" key={task.id}><td><strong>{task.name}</strong><small>{task.content || '—'}</small></td>
-                <td>{task.assigneeName}<small>{task.assigneeUsername}</small></td><td>{new Date(task.deadline).toLocaleString()}</td><td><span className={`status ${task.status.toLowerCase()}`}>{task.status}</span>{task.returnReason && <small>{task.returnReason}</small>}</td>
-                <td className="row-actions"><button className="btn secondary" disabled={task.status === 'WITHDRAWN'} onClick={() => setTaskForm({ id: task.id, name: task.name, content: task.content ?? '', deadline: new Date(task.deadline).toISOString().slice(0, 16), assigneeId: task.assigneeId })}>修改</button>
-                  <button className="btn danger" disabled={task.status !== 'ASSIGNED'} onClick={() => void mutate(() => api(`/task-assignment/tasks/${task.id}/withdraw`, { method: 'POST' }), '任務已撤回。')}>撤回</button>
-                  <button className="btn danger" disabled={task.status === 'RETURNED'} onClick={() => void mutate(() => api(`/task-assignment/tasks/${task.id}`, { method: 'DELETE' }), '任務已刪除。')}>刪除</button></td></tr>)}</tbody>
+              <tbody>{tasks.map(task => <tr data-testid="task-row" key={task.id}><td data-label="任務"><strong>{task.name}</strong><small>{task.content || '—'}</small></td>
+                <td data-label="受派人">{task.assigneeName}<small>{task.assigneeUsername}</small></td><td data-label="期限">{new Date(task.deadline).toLocaleString()}</td><td data-label="狀態"><span className={`status ${task.status.toLowerCase()}`}>{task.status}</span>{task.returnReason && <small>{task.returnReason}</small>}</td>
+                <td data-label="操作" className="row-actions"><ActionIconButton label="修改任務" icon="✎" disabled={task.status === 'WITHDRAWN'} onClick={() => setTaskForm({ id: task.id, name: task.name, content: task.content ?? '', deadline: new Date(task.deadline).toISOString().slice(0, 16), assigneeId: task.assigneeId })} />
+                  <ActionIconButton label="撤回任務" icon="↩" tone="danger" disabled={task.status !== 'ASSIGNED'} onClick={() => void mutate(() => api(`/task-assignment/tasks/${task.id}/withdraw`, { method: 'POST' }), '任務已撤回。')} />
+                  <ActionIconButton label="刪除任務" icon="×" tone="danger" disabled={task.status === 'RETURNED'} onClick={() => void mutate(() => api(`/task-assignment/tasks/${task.id}`, { method: 'DELETE' }), '任務已刪除。')} /></td></tr>)}</tbody>
             </table>{tasks.length === 0 && <p className="empty-state">尚無符合條件的任務。</p>}
           </div>
         </section>}
@@ -222,8 +223,8 @@ export default function TaskAssignmentPage() {
         {tab === 'inbox' && <div className="card management-list">
           <div className="table-toolbar"><div><p className="eyebrow">Inbox</p><h2>我的任務</h2></div><span>{activeTasks.length} 筆進行中</span></div>
           <table><thead><tr><th>任務</th><th>指派人</th><th>期限</th><th>狀態 / 退回</th></tr></thead>
-            <tbody>{inbox.map(task => <tr data-testid="inbox-task-row" key={task.id}><td><strong>{task.name}</strong><small>{task.content || '—'}</small></td><td>{task.creatorName}</td><td>{new Date(task.deadline).toLocaleString()}</td>
-              <td>{task.status === 'ASSIGNED' ? <div className="return-control"><input data-testid="return-reason" placeholder="退回原因" value={returnReasons[task.id] ?? ''} onChange={event => setReturnReasons({ ...returnReasons, [task.id]: event.target.value })} /><button data-testid="task-return" className="btn danger" onClick={() => void returnTask(task.id)}>退回</button></div> : <><span className={`status ${task.status.toLowerCase()}`}>{task.status}</span>{task.returnReason && <small>{task.returnReason}</small>}</>}</td>
+            <tbody>{inbox.map(task => <tr data-testid="inbox-task-row" key={task.id}><td data-label="任務"><strong>{task.name}</strong><small>{task.content || '—'}</small></td><td data-label="指派人">{task.creatorName}</td><td data-label="期限">{new Date(task.deadline).toLocaleString()}</td>
+              <td data-label="狀態／退回">{task.status === 'ASSIGNED' ? <div className="return-control"><input data-testid="return-reason" placeholder="退回原因" value={returnReasons[task.id] ?? ''} onChange={event => setReturnReasons({ ...returnReasons, [task.id]: event.target.value })} /><ActionIconButton data-testid="task-return" label="退回任務" icon="↩" tone="danger" onClick={() => void returnTask(task.id)} /></div> : <><span className={`status ${task.status.toLowerCase()}`}>{task.status}</span>{task.returnReason && <small>{task.returnReason}</small>}</>}</td>
             </tr>)}</tbody></table>{inbox.length === 0 && <p className="empty-state">目前沒有收到任務。</p>}
         </div>}
       </>}

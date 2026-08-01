@@ -148,14 +148,14 @@ export default function RegistrationManagementPage() {
           : <div className="registration-record-table"><table>
             <thead><tr><th>註冊方式</th><th>識別資料</th><th>狀態</th><th>完成時間</th></tr></thead>
             <tbody>{records.map(record => <tr key={record.id} data-testid="registration-record-row">
-              <td><span className={`tag ${record.method === 'LINE' ? 'line' : ''}`}>
+              <td data-label="註冊方式"><span className={`tag ${record.method === 'LINE' ? 'line' : ''}`}>
                 {record.method === 'LINE' ? 'LINE 註冊' : '信箱註冊'}
               </span></td>
-              <td>{record.identifier}</td>
-              <td><span className={`tag ${record.success ? 'managed' : 'failed'}`}>
+              <td data-label="識別資料">{record.identifier}</td>
+              <td data-label="狀態"><span className={`tag ${record.success ? 'managed' : 'failed'}`}>
                 {record.success ? '成功' : '失敗'}
               </span></td>
-              <td>{new Date(record.completedAt).toLocaleString('zh-TW')}</td>
+              <td data-label="完成時間">{new Date(record.completedAt).toLocaleString('zh-TW')}</td>
             </tr>)}</tbody>
           </table></div>}
       </section>
