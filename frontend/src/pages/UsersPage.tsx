@@ -1,23 +1,23 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { useAppDispatch, useAppSelector } from '../app/hooks';
-import AppShell from '../components/AppShell';
-import ActionIconButton from '../components/ActionIconButton';
-import PasswordInput from '../components/PasswordInput';
+import { useEffect, useState, type FormEvent } from "react";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import AppShell from "../components/AppShell";
+import ActionIconButton from "../components/ActionIconButton";
+import PasswordInput from "../components/PasswordInput";
 import {
   assignManager,
   createUser,
   disableUser,
   fetchUsers,
   type UserRow,
-} from '../features/users/usersSlice';
+} from "../features/users/usersSlice";
 
-const blank = { fullName: '', username: '', email: '', password: '' };
+const blank = { fullName: "", username: "", email: "", password: "" };
 
 export default function UsersPage() {
   const dispatch = useAppDispatch();
   const { rows, status, error } = useAppSelector((s) => s.users);
 
-  const [tab, setTab] = useState<'users' | 'roles'>('users');
+  const [tab, setTab] = useState<"users" | "roles">("users");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(blank);
 
@@ -39,20 +39,20 @@ export default function UsersPage() {
       <div className="content">
         <div className="tabs">
           <button
-            className={tab === 'users' ? 'active' : ''}
-            onClick={() => setTab('users')}
+            className={tab === "users" ? "active" : ""}
+            onClick={() => setTab("users")}
           >
             使用者
           </button>
           <button
-            className={tab === 'roles' ? 'active' : ''}
-            onClick={() => setTab('roles')}
+            className={tab === "roles" ? "active" : ""}
+            onClick={() => setTab("roles")}
           >
             角色
           </button>
         </div>
 
-        {tab === 'users' ? (
+        {tab === "users" ? (
           <>
             <header className="page-heading">
               <div>
@@ -108,7 +108,9 @@ export default function UsersPage() {
                       type="email"
                       required
                       value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
                     />
                   </label>
 
@@ -147,7 +149,7 @@ export default function UsersPage() {
               onDisable={(id) => void dispatch(disableUser(id))}
             />
 
-            {status === 'loading' && <p>讀取中…</p>}
+            {status === "loading" && <p>讀取中…</p>}
             {error && <p className="error">{error}</p>}
           </>
         ) : (
@@ -187,12 +189,12 @@ export default function UsersPage() {
                         <div className="table-actions">
                           <ActionIconButton
                             label={
-                              row.roles.includes('MANAGER')
-                                ? '已授予主管'
-                                : '授予主管'
+                              row.roles.includes("MANAGER")
+                                ? "已授予主管"
+                                : "授予主管"
                             }
                             icon="♙"
-                            disabled={row.roles.includes('MANAGER')}
+                            disabled={row.roles.includes("MANAGER")}
                             onClick={() => void dispatch(assignManager(row.id))}
                           />
                         </div>
@@ -249,7 +251,7 @@ function UserTable({
               <td data-label="操作">
                 <div className="table-actions">
                   <ActionIconButton
-                    label={row.active ? '停用使用者' : '使用者已停用'}
+                    label={row.active ? "停用使用者" : "使用者已停用"}
                     icon="⊘"
                     tone="danger"
                     disabled={!row.active}

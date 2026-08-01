@@ -1,7 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { api } from '../app/api';
-import AppShell from '../components/AppShell';
-import ActionIconButton from '../components/ActionIconButton';
+import { useEffect, useState, type FormEvent } from "react";
+import { api } from "../app/api";
+import AppShell from "../components/AppShell";
+import ActionIconButton from "../components/ActionIconButton";
 
 interface Row {
   id: string;
@@ -12,12 +12,12 @@ interface Row {
 
 export default function TestPage() {
   const [rows, setRows] = useState<Row[]>([]);
-  const [name, setName] = useState('連線測試');
-  const [error, setError] = useState('');
+  const [name, setName] = useState("連線測試");
+  const [error, setError] = useState("");
 
   async function refresh() {
     try {
-      setRows(await api<Row[]>('/test/testTemp'));
+      setRows(await api<Row[]>("/test/testTemp"));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -29,12 +29,12 @@ export default function TestPage() {
 
   async function add(event: FormEvent) {
     event.preventDefault();
-    await api<Row>('/test/testTemp', {
-      method: 'POST',
+    await api<Row>("/test/testTemp", {
+      method: "POST",
       body: JSON.stringify({
         name,
-        description: '前後端與 MSSQL CRUD 驗證',
-        testStatus: 'READY',
+        description: "前後端與 MSSQL CRUD 驗證",
+        testStatus: "READY",
       }),
     });
     await refresh();
@@ -42,14 +42,18 @@ export default function TestPage() {
 
   async function update(row: Row) {
     await api<Row>(`/test/testTemp/${row.id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ ...row, name: `${row.name}-已更新`, testStatus: 'DONE' }),
+      method: "PUT",
+      body: JSON.stringify({
+        ...row,
+        name: `${row.name}-已更新`,
+        testStatus: "DONE",
+      }),
     });
     await refresh();
   }
 
   async function remove(id: string) {
-    await api(`/test/testTemp/${id}`, { method: 'DELETE' });
+    await api(`/test/testTemp/${id}`, { method: "DELETE" });
     await refresh();
   }
 

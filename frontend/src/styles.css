@@ -186,7 +186,8 @@ a {
   justify-content: space-between;
   padding: clamp(28px, 5vw, 72px);
   color: #fff;
-  background: radial-gradient(circle at 75% 15%, #5b5cf0, transparent 42%), #161a40;
+  background: radial-gradient(circle at 75% 15%, #5b5cf0, transparent 42%),
+    #161a40;
 
   h1 {
     max-width: 640px;
@@ -311,7 +312,9 @@ textarea:focus {
   padding: 24px 14px;
   border-right: 1px solid var(--border);
   background: var(--surface);
-  transition: width 0.2s, transform 0.2s;
+  transition:
+    width 0.2s,
+    transform 0.2s;
 
   nav {
     display: grid;
@@ -573,7 +576,11 @@ td .btn + .btn {
 .workflow-line {
   width: 44px;
   height: 1px;
-  background: linear-gradient(90deg, var(--secondary), rgba(255, 255, 255, 0.2));
+  background: linear-gradient(
+    90deg,
+    var(--secondary),
+    rgba(255, 255, 255, 0.2)
+  );
 }
 
 .auth-links {
@@ -701,7 +708,13 @@ td .btn + .btn {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: radial-gradient(circle at 20% 10%, rgba(91, 92, 240, 0.13), transparent 34%), radial-gradient(circle at 80% 90%, rgba(6, 199, 85, 0.12), transparent 35%), var(--bg);
+  background: radial-gradient(
+      circle at 20% 10%,
+      rgba(91, 92, 240, 0.13),
+      transparent 34%
+    ),
+    radial-gradient(circle at 80% 90%, rgba(6, 199, 85, 0.12), transparent 35%),
+    var(--bg);
 }
 
 .oauth-callback-card {
