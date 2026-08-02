@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { logout } from "../features/auth/authSlice";
@@ -7,6 +7,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const session = useAppSelector((s) => s.auth.session);
+  const sidebarRef = useRef<HTMLElement | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("agentflow-sidebar-collapsed") === "true",
   );
@@ -48,6 +50,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (sidebarCollapsed || window.innerWidth > 720) return;
+
+    const handleDocumentClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      const clickedToggle = headerRef.current
+        ?.querySelector(".sidebar-toggle")
+        ?.contains(target);
+      const clickedSidebar = sidebarRef.current?.contains(target);
+
+      if (!clickedSidebar && !clickedToggle) {
+        setSidebarCollapsed(true);
+        localStorage.setItem("agentflow-sidebar-collapsed", "true");
+      }
+    };
+
+    document.addEventListener("click", handleDocumentClick);
+    return () => document.removeEventListener("click", handleDocumentClick);
+  }, [sidebarCollapsed]);
+
   const toggleSidebar = () => {
     setSidebarCollapsed((current) => {
       const next = !current;
@@ -56,9 +80,16 @@ export default function AppShell({ children }: { children: ReactNode }) {
     });
   };
 
+  const closeSidebar = () => {
+    if (window.innerWidth <= 720) {
+      setSidebarCollapsed(true);
+      localStorage.setItem("agentflow-sidebar-collapsed", "true");
+    }
+  };
+
   return (
     <div className="shell">
-      <header className="app-header">
+      <header className="app-header" ref={headerRef}>
         <div className="header-leading">
           <button
             className="icon-button sidebar-toggle"
@@ -104,8 +135,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <aside className={`sidebar${sidebarCollapsed ? " collapsed" : ""}`}>
-        <nav aria-label="主要導覽">
+      <aside
+        className={`sidebar${sidebarCollapsed ? " collapsed" : ""}`}
+        ref={sidebarRef}
+      >
+        <nav aria-label="主要導覽" onClick={closeSidebar}>
           {session?.roles.includes("SYSTEM_ADMIN") && (
             <NavLink to="/users">
               <span className="nav-icon">♙</span>
