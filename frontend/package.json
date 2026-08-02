@@ -13,6 +13,7 @@
     "test:e2e:company-supervisor-management": "cypress run --spec cypress/e2e/company-supervisor-management.cy.ts",
     "test:e2e:task-assignment": "cypress run --spec cypress/e2e/task-assignment.cy.ts",
     "test:e2e:my-tasks": "cypress run --spec cypress/e2e/my-tasks.cy.ts",
+    "test:e2e:system-report": "cypress run --spec cypress/e2e/system-report.cy.ts",
     "test:e2e:open": "cypress open"
   },
   "dependencies": {

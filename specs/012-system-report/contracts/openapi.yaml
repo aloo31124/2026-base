@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: 系統報表 API
+  version: 1.0.0
+paths:
+  /api/admin/system-reports/companies:
+    get:
+      summary: 取得系統報表公司篩選選項
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 公司選項查詢成功 }
+        '403': { description: 非系統管理員 }
+  /api/admin/system-reports/task-trend:
+    get:
+      summary: 取得公司任務量按日趨勢
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: companyId, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date } }
+      responses:
+        '200': { description: 任務趨勢查詢成功 }
+        '400': { description: 日期範圍不合法 }
+        '404': { description: 找不到指定公司 }
+        '403': { description: 非系統管理員 }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }

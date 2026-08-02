@@ -1,0 +1,781 @@
+{
+  "info": {
+    "_postman_id": "7ac83be0-faa6-48cb-bb02-202608020012",
+    "name": "AgentFlow 系統報表",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "userToken",
+      "value": ""
+    },
+    {
+      "key": "managerToken",
+      "value": ""
+    },
+    {
+      "key": "employeeToken",
+      "value": ""
+    },
+    {
+      "key": "suffix",
+      "value": ""
+    },
+    {
+      "key": "companyName",
+      "value": ""
+    },
+    {
+      "key": "companyId",
+      "value": ""
+    },
+    {
+      "key": "managerUsername",
+      "value": ""
+    },
+    {
+      "key": "managerId",
+      "value": ""
+    },
+    {
+      "key": "employeeUsername",
+      "value": ""
+    },
+    {
+      "key": "employeeId",
+      "value": ""
+    },
+    {
+      "key": "supervisorId",
+      "value": ""
+    },
+    {
+      "key": "today",
+      "value": ""
+    },
+    {
+      "key": "yesterday",
+      "value": ""
+    },
+    {
+      "key": "tomorrow",
+      "value": ""
+    },
+    {
+      "key": "deadline",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 管理員登入",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const suffix = Date.now().toString();",
+              "const today = new Date(); const yesterday = new Date(today); const tomorrow = new Date(today);",
+              "yesterday.setUTCDate(yesterday.getUTCDate() - 1); tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);",
+              "pm.collectionVariables.set('suffix', suffix);",
+              "pm.collectionVariables.set('companyName', `Postman報表公司-${suffix}`);",
+              "pm.collectionVariables.set('managerUsername', `postman.report.manager.${suffix}`);",
+              "pm.collectionVariables.set('employeeUsername', `postman.report.employee.${suffix}`);",
+              "pm.collectionVariables.set('today', today.toISOString().slice(0, 10));",
+              "pm.collectionVariables.set('yesterday', yesterday.toISOString().slice(0, 10));",
+              "pm.collectionVariables.set('tomorrow', tomorrow.toISOString().slice(0, 10));",
+              "pm.collectionVariables.set('deadline', new Date(Date.now() + 172800000).toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('管理員登入 200', () => pm.response.to.have.status(200));",
+              "var responseData = pm.response.json().data;",
+              "pm.test('管理員角色正確', () => pm.expect(responseData.roles).to.include('SYSTEM_ADMIN'));",
+              "pm.collectionVariables.set('adminToken', responseData.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}"
+        }
+      }
+    },
+    {
+      "name": "02 一般使用者登入",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('一般使用者登入 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('userToken', pm.response.json().data.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"user\",\"password\":\"admin123\"}"
+        }
+      }
+    },
+    {
+      "name": "03 建立報表公司",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('建立公司 200', () => pm.response.to.have.status(200));",
+              "var responseData = pm.response.json().data;",
+              "pm.test('公司 response 值正確', () => pm.expect(responseData.name).to.eql(pm.collectionVariables.get('companyName')));",
+              "pm.collectionVariables.set('companyId', responseData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/company-supervisor-management/companies",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "company-supervisor-management",
+            "companies"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"{{companyName}}\",\"description\":\"Postman 系統報表公司\"}"
+        }
+      }
+    },
+    {
+      "name": "04 建立報表主管",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('建立主管帳號 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('managerId', pm.response.json().data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/users",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "users"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"fullName\":\"Postman報表主管\",\"username\":\"{{managerUsername}}\",\"email\":\"{{managerUsername}}@example.com\",\"password\":\"password123\"}"
+        }
+      }
+    },
+    {
+      "name": "05 建立報表員工",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('建立員工帳號 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('employeeId', pm.response.json().data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/users",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "users"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"fullName\":\"Postman報表員工\",\"username\":\"{{employeeUsername}}\",\"email\":\"{{employeeUsername}}@example.com\",\"password\":\"password123\"}"
+        }
+      }
+    },
+    {
+      "name": "06 授予主管角色",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('授予主管 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('supervisorId', pm.response.json().data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/company-supervisor-management/supervisors",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "company-supervisor-management",
+            "supervisors"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"userId\":\"{{managerId}}\",\"title\":\"Postman報表主管\"}"
+        }
+      }
+    },
+    {
+      "name": "07 主管綁定公司",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('主管綁定公司 200', () => pm.response.to.have.status(200));",
+              "pm.test('綁定公司值正確', () => pm.expect(pm.response.json().data.companyId).to.eql(pm.collectionVariables.get('companyId')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/company-supervisor-management/bindings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "company-supervisor-management",
+            "bindings"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"companyId\":\"{{companyId}}\",\"supervisorId\":\"{{supervisorId}}\"}"
+        }
+      }
+    },
+    {
+      "name": "08 主管登入",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('主管登入 200', () => pm.response.to.have.status(200));",
+              "pm.test('主管角色正確', () => pm.expect(pm.response.json().data.roles).to.include('MANAGER'));",
+              "pm.collectionVariables.set('managerToken', pm.response.json().data.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"{{managerUsername}}\",\"password\":\"password123\"}"
+        }
+      }
+    },
+    {
+      "name": "09 員工登入",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('員工登入 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('employeeToken', pm.response.json().data.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"{{employeeUsername}}\",\"password\":\"password123\"}"
+        }
+      }
+    },
+    {
+      "name": "10 員工綁定公司",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('員工綁定公司 200', () => pm.response.to.have.status(200));",
+              "pm.test('員工公司值正確', () => pm.expect(pm.response.json().data.companyId).to.eql(pm.collectionVariables.get('companyId')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{employeeToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/task-assignment/company-bindings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "task-assignment",
+            "company-bindings"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"companyName\":\"{{companyName}}\"}"
+        }
+      }
+    },
+    {
+      "name": "11 主管綁定員工",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('主管綁定員工 200', () => pm.response.to.have.status(200));",
+              "pm.test('員工識別正確', () => pm.expect(pm.response.json().data.employeeId).to.eql(pm.collectionVariables.get('employeeId')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/task-assignment/employee-bindings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "task-assignment",
+            "employee-bindings"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"employeeId\":\"{{employeeId}}\"}"
+        }
+      }
+    },
+    {
+      "name": "12 主管建立任務",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('建立任務 200', () => pm.response.to.have.status(200));",
+              "pm.test('任務受派人正確', () => pm.expect(pm.response.json().data.assigneeId).to.eql(pm.collectionVariables.get('employeeId')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/task-assignment/tasks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "task-assignment",
+            "tasks"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Postman系統報表任務-{{suffix}}\",\"content\":\"Postman 趨勢統計\",\"deadline\":\"{{deadline}}\",\"assigneeId\":\"{{employeeId}}\"}"
+        }
+      }
+    },
+    {
+      "name": "13 查詢公司選項",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('公司選項 200', () => pm.response.to.have.status(200));",
+              "var responseRows = pm.response.json().data;",
+              "pm.test('公司選項包含新公司', () => pm.expect(responseRows.map(row => row.id)).to.include(pm.collectionVariables.get('companyId')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/system-reports/companies",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "system-reports",
+            "companies"
+          ]
+        }
+      }
+    },
+    {
+      "name": "14 查詢預設一年趨勢",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('預設趨勢 200', () => pm.response.to.have.status(200));",
+              "var responseData = pm.response.json().data;",
+              "pm.test('預設全部公司與一年資料點正確', () => { pm.expect(responseData.companyName).to.eql('全部公司'); pm.expect(responseData.points.length).to.be.within(365, 366); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/system-reports/task-trend",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "system-reports",
+            "task-trend"
+          ]
+        }
+      }
+    },
+    {
+      "name": "15 篩選單一公司日期趨勢",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('單一公司趨勢 200', () => pm.response.to.have.status(200));",
+              "var responseData = pm.response.json().data;",
+              "pm.test('趨勢 response 值正確', () => { pm.expect(responseData.companyId).to.eql(pm.collectionVariables.get('companyId')); pm.expect(responseData.companyName).to.eql(pm.collectionVariables.get('companyName')); pm.expect(responseData.totalTasks).to.eql(1); pm.expect(responseData.companyCount).to.eql(1); pm.expect(responseData.points).to.have.lengthOf(3); });",
+              "pm.test('每日點合計等於摘要', () => pm.expect(responseData.points.reduce((sum, row) => sum + row.taskCount, 0)).to.eql(responseData.totalTasks));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/system-reports/task-trend?companyId={{companyId}}&from={{yesterday}}&to={{tomorrow}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "system-reports",
+            "task-trend"
+          ],
+          "query": [
+            { "key": "companyId", "value": "{{companyId}}" },
+            { "key": "from", "value": "{{yesterday}}" },
+            { "key": "to", "value": "{{tomorrow}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "16 日期反向拒絕",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('日期反向 400', () => pm.response.to.have.status(400));",
+              "pm.test('日期錯誤訊息正確', () => pm.expect(pm.response.json().message).to.eql('開始日期不得晚於結束日期。'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/system-reports/task-trend?from={{tomorrow}}&to={{today}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "system-reports",
+            "task-trend"
+          ],
+          "query": [
+            { "key": "from", "value": "{{tomorrow}}" },
+            { "key": "to", "value": "{{today}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "17 一般使用者禁止查詢",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('一般使用者 403', () => pm.response.to.have.status(403));",
+              "pm.test('系統報表權限訊息正確', () => pm.expect(pm.response.json().message).to.eql('[系統報表] [api] 無系統管理員權限。'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/system-reports/task-trend",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "system-reports",
+            "task-trend"
+          ]
+        }
+      }
+    }
+  ]
+}

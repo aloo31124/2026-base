@@ -121,6 +121,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </NavLink>
           )}
           {session?.roles.includes("SYSTEM_ADMIN") && (
+            <NavLink to="/system-reports">
+              <span className="nav-icon">⌁</span>
+              <span>系統報表</span>
+            </NavLink>
+          )}
+          {session?.roles.includes("SYSTEM_ADMIN") && (
             <NavLink to="/company-supervisor-management">
               <span className="nav-icon">⌂</span>
               <span>公司主管管理</span>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "系統報表"
+  short_description: "維護跨公司任務趨勢、統計口徑、日期補零與報表驗收契約"
+  default_prompt: "Use $system-report to implement or review AgentFlow system task-trend reports consistently."

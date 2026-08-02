@@ -11,3 +11,4 @@
 - [註冊登入管理](business-logic/registration-management/SKILL.md) — 動態密碼政策、LINE／信箱首次註冊稽核與管理員雙層權限契約。
 - [公司主管管理](business-logic/company-supervisor-management/SKILL.md) — 公司、主管／員工公司綁定、一人一公司與管理員權限契約。
 - [任務指派](business-logic/task-assignment/SKILL.md) — 公司成員關係、合法受派人、我的任務進度、附件、提交與延期契約。
+- [系統報表](business-logic/system-report/SKILL.md) — 跨公司任務趨勢、統計口徑、日期補零、權限與測試契約。

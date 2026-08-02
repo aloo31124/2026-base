@@ -13,6 +13,7 @@ import CompanySupervisorManagementPage from "./pages/CompanySupervisorManagement
 import TaskAssignmentPage from "./pages/TaskAssignmentPage";
 import MyTasksPage from "./pages/MyTasksPage";
 import MyTaskEditPage from "./pages/MyTaskEditPage";
+import SystemReportPage from "./pages/SystemReportPage";
 
 function Guard({
   children,
@@ -82,6 +83,17 @@ export default function App() {
             unauthorizedMessage="[公司主管管理] [頁面] 無系統管理員權限。"
           >
             <CompanySupervisorManagementPage />
+          </Guard>
+        }
+      />
+      <Route
+        path="/system-reports"
+        element={
+          <Guard
+            admin
+            unauthorizedMessage="[系統報表] [頁面] 無系統管理員權限。"
+          >
+            <SystemReportPage />
           </Guard>
         }
       />

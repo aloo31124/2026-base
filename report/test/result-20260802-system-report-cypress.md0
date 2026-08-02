@@ -1,0 +1,43 @@
+# 系統報表 Cypress 測試報告
+
+## 目錄
+
+- [執行摘要](#執行摘要) — 真實瀏覽器 E2E 統計
+- [Task 與 Checklist 對照](#task-與-checklist-對照) — React Page、篩選與折線圖驗證
+- [完整建置證據](#完整建置證據) — 後端、前端與整合測試
+- [結論](#結論) — 完成率 100%
+
+## 執行摘要
+
+- 日期：2026-08-02
+- Spec：`Frontend/cypress/e2e/system-report.cy.ts`
+- 指令：`npm --prefix Frontend run test:e2e:system-report`
+- Browser：Electron 138 headless
+- Tests：1 passing、0 failing、0 pending、0 skipped
+- Duration：2 秒
+- Screenshots：0（無失敗）
+- Video：未啟用
+
+## Task 與 Checklist 對照
+
+| 驗收項目 | Task / Checklist | 瀏覽器證據 | 結果 |
+|---|---|---|---|
+| 系統報表路由與頁面 | T012–T013、CHK017 | 管理員以 JWT 進入 `/system-reports` 並看到頁首 | 通過 |
+| 任務趨勢預設標籤 | T012、CHK006 | `task-trend-tab` 顯示且為 active | 通過 |
+| 預設一年日期 | T012、CHK008 | 起迄欄位均為有效 `yyyy-MM-dd` | 通過 |
+| 公司篩選 | T012、CHK006–CHK007 | 選取新公司後範圍名稱與 `totalTasks=1` | 通過 |
+| 日期篩選 | T012、CHK008–CHK010 | 設為單日並重新查詢 | 通過 |
+| 可存取 SVG 折線圖 | T011、T014、CHK017 | `trend-chart` 可見，單日 `trend-chart-point` 恰為 1 | 通過 |
+| 空資料狀態判斷 | T011–T012、CHK009 | 有任務時不顯示 `trend-empty` | 通過 |
+| Cypress 完成條件 | T004、T016、T019、CHK021–CHK022 | 1/1 scenario 通過 | 通過 |
+
+## 完整建置證據
+
+- 後端：`./Backend/gradlew -p Backend clean test`，35 tests、0 failure，BUILD SUCCESSFUL。
+- 系統報表整合測試：3 tests、0 failure，涵蓋全部/單一公司、預設一年、邊界、404 與 403。
+- 前端：`npm --prefix Frontend run build`，TypeScript 與 Vite production build 成功。
+- 環境提示：本機 Node 20.18.0 低於 Vite 建議 20.19+，但 build 與 Cypress 均成功，未影響驗收。
+
+## 結論
+
+Cypress 完成率 **100%（1/1 tests）**；React 系統報表 Page、公司與日期篩選、摘要及 SVG 折線圖核心流程全數通過。
