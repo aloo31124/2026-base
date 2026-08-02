@@ -312,6 +312,9 @@ textarea:focus {
   padding: 24px 14px;
   border-right: 1px solid var(--border);
   background: var(--surface);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   transition:
     width 0.2s,
     transform 0.2s;

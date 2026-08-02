@@ -140,6 +140,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <span className="nav-icon">↗</span>
             <span>任務指派</span>
           </NavLink>
+          <NavLink to="/my-tasks">
+            <span className="nav-icon">✓</span>
+            <span>我的任務</span>
+          </NavLink>
           {session?.roles.includes("MANAGER") && (
             <NavLink to="/manager-reports">
               <span className="nav-icon">◔</span>
@@ -149,10 +153,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <NavLink to="/my-reports">
             <span className="nav-icon">◒</span>
             <span>我的報表</span>
-          </NavLink>
-          <NavLink to="/my-tasks">
-            <span className="nav-icon">✓</span>
-            <span>我的任務</span>
           </NavLink>
           <NavLink to="/test/testTemp/">
             <span className="nav-icon">⌁</span>
