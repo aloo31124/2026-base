@@ -26,6 +26,17 @@ public final class RegistrationManagementDtos {
     ) {
     }
 
+    public record SessionTimeoutPolicyRequest(
+        @Min(5) @Max(1440) int timeoutMinutes
+    ) {
+    }
+
+    public record SessionTimeoutPolicyResponse(
+        int timeoutMinutes,
+        Instant updatedAt
+    ) {
+    }
+
     public record RegistrationRecordResponse(
         UUID id,
         RegistrationRecord.Method method,

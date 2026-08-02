@@ -274,6 +274,48 @@ textarea:focus {
   color: var(--muted);
 }
 
+.session-countdown {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 142px;
+  padding: 7px 10px;
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  font-size: 0.76rem;
+  white-space: nowrap;
+
+  strong {
+    color: var(--text);
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  &.warning {
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 36%, var(--border));
+    background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+
+    strong {
+      color: var(--danger);
+    }
+  }
+}
+
+.session-expired-message {
+  margin: 0;
+  padding: 11px 13px;
+  color: #8d3b00;
+  border: 1px solid #f1bf8f;
+  border-radius: 11px;
+  background: #fff7ed;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .icon-button {
   display: grid;
   place-items: center;
@@ -516,6 +558,24 @@ td .btn + .btn {
   }
 
   .header-actions > div:not(.avatar) {
+    display: none;
+  }
+
+  .app-header {
+    height: 64px;
+    padding: 0 12px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .session-countdown {
+    min-width: 82px;
+    padding: 6px 8px;
+  }
+
+  .session-countdown-label {
     display: none;
   }
 
@@ -902,6 +962,21 @@ td .btn + .btn {
   }
 }
 
+.session-timeout-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) auto;
+  gap: 12px;
+  align-items: end;
+
+  .btn {
+    width: max-content;
+  }
+}
+
+.session-timeout-hint {
+  margin-top: 16px;
+}
+
 .section-heading {
   display: flex;
   align-items: flex-start;
@@ -985,6 +1060,14 @@ td .btn + .btn {
 
   .policy-card form > input {
     max-width: none;
+  }
+
+  .session-timeout-form {
+    grid-template-columns: 1fr;
+
+    .btn {
+      width: 100%;
+    }
   }
 }
 

@@ -1,13 +1,40 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { api } from '../../app/api';
+import { getSessionExpiresAt } from './sessionExpiry';
 
 export interface Session { token: string; tokenType: string; username: string; fullName: string; roles: string[] }
-interface AuthState { session: Session | null; status: 'idle' | 'loading' | 'failed'; error?: string }
+interface AuthState { session: Session | null; status: 'idle' | 'loading' | 'failed'; error?: string; logoutReason?: 'session-expired' }
 export interface LineAuthorizeResponse { authorizationUrl: string; expiresAt: string }
 export interface LineCallbackRequest { code?: string; state: string; error?: string; errorDescription?: string }
 
-const saved = localStorage.getItem('session');
-const initialState: AuthState = { session: saved ? JSON.parse(saved) : null, status: 'idle' };
+function clearSavedSession() {
+  localStorage.removeItem('session');
+  localStorage.removeItem('token');
+}
+
+function loadSavedSession(): Session | null {
+  const saved = localStorage.getItem('session');
+  if (!saved) return null;
+
+  try {
+    const session = JSON.parse(saved) as Session;
+    if (!session?.token) {
+      clearSavedSession();
+      return null;
+    }
+    const expiresAt = getSessionExpiresAt(session.token);
+    if (expiresAt !== null && expiresAt <= Date.now()) {
+      clearSavedSession();
+      return null;
+    }
+    return session;
+  } catch {
+    clearSavedSession();
+    return null;
+  }
+}
+
+const initialState: AuthState = { session: loadSavedSession(), status: 'idle' };
 
 export const login = createAsyncThunk('auth/login', async (credentials: { username: string; password: string }) =>
   api<Session>('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }));
@@ -22,6 +49,7 @@ function saveSession(state: AuthState, session: Session) {
   state.status = 'idle';
   state.session = session;
   state.error = undefined;
+  state.logoutReason = undefined;
   localStorage.setItem('session', JSON.stringify(session));
   localStorage.setItem('token', session.token);
 }
@@ -29,7 +57,7 @@ function saveSession(state: AuthState, session: Session) {
 const slice = createSlice({
   name: 'auth', initialState,
   reducers: {
-    logout(state) { state.session = null; localStorage.removeItem('session'); localStorage.removeItem('token'); },
+    logout(state, action: PayloadAction<'session-expired' | undefined>) { state.session = null; state.logoutReason = action.payload; clearSavedSession(); },
     clearAuthError(state) { state.error = undefined; if (state.status === 'failed') state.status = 'idle'; },
     acceptSession(state, action: PayloadAction<Session>) { saveSession(state, action.payload); },
   },

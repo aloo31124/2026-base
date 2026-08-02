@@ -13,6 +13,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const status = useAppSelector((s) => s.auth.status);
   const error = useAppSelector((s) => s.auth.error);
+  const sessionExpired =
+    useAppSelector((s) => s.auth.logoutReason) === "session-expired";
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("admin123");
   /** 登入後依角色進入管理頁或公司／任務協作流程。 */
@@ -58,6 +60,15 @@ export default function LoginPage() {
           <p className="eyebrow">Welcome back</p>
           <h2>登入工作空間</h2>
           <p className="auth-hint">繼續管理你的代理工作流與自動化任務。</p>
+          {sessionExpired && (
+            <p
+              className="session-expired-message"
+              role="status"
+              data-testid="session-expired-message"
+            >
+              登入時間已到，請重新登入。
+            </p>
+          )}
           <button
             type="button"
             data-testid="line-login"

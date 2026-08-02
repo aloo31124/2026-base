@@ -1,0 +1,74 @@
+openapi: 3.0.3
+info:
+  title: 登出時間設定 API
+  version: 1.0.0
+paths:
+  /api/admin/registration-management/session-timeout:
+    get:
+      summary: 取得目前登入效期政策
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionTimeoutPolicyApiResponse'
+        '403':
+          description: 無系統管理員權限
+    put:
+      summary: 更新登入效期政策
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [timeoutMinutes]
+              properties:
+                timeoutMinutes:
+                  type: integer
+                  minimum: 5
+                  maximum: 1440
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionTimeoutPolicyApiResponse'
+        '400':
+          description: 分鐘數超出範圍
+        '403':
+          description: 無系統管理員權限
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SessionTimeoutPolicyApiResponse:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: 登出時間設定查詢成功。
+        data:
+          type: object
+          required: [timeoutMinutes]
+          properties:
+            timeoutMinutes:
+              type: integer
+              example: 120
+            updatedAt:
+              type: string
+              format: date-time
+              nullable: true

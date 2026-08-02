@@ -1,7 +1,14 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { logout } from "../features/auth/authSlice";
+import SessionCountdown from "./SessionCountdown";
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
@@ -87,6 +94,16 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }
   };
 
+  const handleSessionExpiry = useCallback(() => {
+    dispatch(logout("session-expired"));
+    navigate("/login", { replace: true });
+  }, [dispatch, navigate]);
+
+  const handleManualLogout = () => {
+    dispatch(logout(undefined));
+    navigate("/login", { replace: true });
+  };
+
   return (
     <div className="shell">
       <header className="app-header" ref={headerRef}>
@@ -104,6 +121,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div className="header-actions">
+          {session && (
+            <SessionCountdown
+              token={session.token}
+              onExpire={handleSessionExpiry}
+            />
+          )}
           <button
             className="icon-button"
             aria-label={darkMode ? "切換日間模式" : "切換夜間模式"}
@@ -126,10 +149,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
           <button
             className="btn secondary"
-            onClick={() => {
-              dispatch(logout());
-              navigate("/login");
-            }}
+            onClick={handleManualLogout}
           >
             登出
           </button>

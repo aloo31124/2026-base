@@ -16,6 +16,8 @@
     "test:e2e:system-report": "cypress run --spec cypress/e2e/system-report.cy.ts",
     "test:e2e:manager-report": "cypress run --spec cypress/e2e/manager-report.cy.ts",
     "test:e2e:my-report": "cypress run --spec cypress/e2e/my-report.cy.ts",
+    "test:e2e:login-session-countdown": "cypress run --spec cypress/e2e/login-session-countdown.cy.ts",
+    "test:e2e:session-timeout-settings": "cypress run --spec cypress/e2e/session-timeout-settings.cy.ts",
     "test:e2e:open": "cypress open"
   },
   "dependencies": {
