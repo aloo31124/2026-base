@@ -146,6 +146,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <span>主管報表</span>
             </NavLink>
           )}
+          <NavLink to="/my-reports">
+            <span className="nav-icon">◒</span>
+            <span>我的報表</span>
+          </NavLink>
           <NavLink to="/my-tasks">
             <span className="nav-icon">✓</span>
             <span>我的任務</span>

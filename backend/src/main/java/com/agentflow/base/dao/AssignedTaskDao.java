@@ -6,6 +6,7 @@ import com.agentflow.base.model.bo.UserAccount;
 import com.agentflow.base.model.dto.ManagerReportDtos.AssigneeOption;
 import com.agentflow.base.model.dto.ManagerReportDtos.CompanyTaskSource;
 import com.agentflow.base.model.dto.ManagerReportDtos.ManagerTaskSource;
+import com.agentflow.base.model.dto.MyReportDtos.MyTaskSource;
 import com.agentflow.base.model.dto.SystemReportDtos.TaskTrendSource;
 import java.time.Instant;
 import java.util.List;
@@ -156,4 +157,31 @@ public interface AssignedTaskDao extends JpaRepository<AssignedTask, UUID> {
         order by task.assignee.fullName asc
         """)
     List<AssigneeOption> findManagerReportAssignees(@Param("creator") UserAccount creator);
+
+    /**
+     * 取得登入員工在指定期間內收到的最小報表來源。
+     *
+     * @param assignee 登入員工，亦為不可覆寫的資料邊界
+     * @param fromInclusive 台北起日轉換後的含起點時間
+     * @param toExclusive 台北迄日次日轉換後的不含終點時間
+     * @return 本人任務報表來源
+     */
+    @Query("""
+        select new com.agentflow.base.model.dto.MyReportDtos$MyTaskSource(
+            task.assignedAt,
+            task.assignee.id,
+            task.assignee.fullName,
+            task.workStatus
+        )
+        from AssignedTask task
+        where task.assignee = :assignee
+          and task.assignedAt >= :fromInclusive
+          and task.assignedAt < :toExclusive
+        order by task.assignedAt asc
+        """)
+    List<MyTaskSource> findMyReportSources(
+        @Param("assignee") UserAccount assignee,
+        @Param("fromInclusive") Instant fromInclusive,
+        @Param("toExclusive") Instant toExclusive
+    );
 }

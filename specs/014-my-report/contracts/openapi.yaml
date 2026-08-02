@@ -1,0 +1,130 @@
+openapi: 3.1.0
+info:
+  title: 我的報表 API
+  version: 1.0.0
+paths:
+  /api/my/reports/filters:
+    get:
+      summary: 取得登入員工本人、工作狀態與預設日期選項
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiltersResponse'
+        '401':
+          description: 未登入或使用者不存在
+  /api/my/reports/report:
+    get:
+      summary: 取得登入員工自己的任務綜合報表
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: assigneeId
+          schema: { type: string, format: uuid }
+          description: 可省略；指定時只能是登入員工本人
+        - in: query
+          name: workStatus
+          schema: { type: string, enum: [PENDING, IN_PROGRESS, COMPLETED] }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '400':
+          description: 日期或工作狀態不合法
+        '401':
+          description: 未登入
+        '403':
+          description: assigneeId 不是登入員工本人
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AssigneeOption:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+    WorkStatusOption:
+      type: object
+      required: [value, label]
+      properties:
+        value: { type: string }
+        label: { type: string }
+    TaskTrendPoint:
+      type: object
+      required: [date, taskCount]
+      properties:
+        date: { type: string, format: date }
+        taskCount: { type: integer, format: int64 }
+    StatusBucket:
+      type: object
+      required: [status, label, taskCount, percentage]
+      properties:
+        status: { type: string }
+        label: { type: string }
+        taskCount: { type: integer, format: int64 }
+        percentage: { type: number, format: double }
+    FiltersResponse:
+      type: object
+      required: [success, data, message]
+      properties:
+        success: { type: boolean, const: true }
+        message: { type: string, const: 我的報表篩選選項查詢成功。 }
+        data:
+          type: object
+          required: [assignees, workStatuses, defaultFrom, defaultTo]
+          properties:
+            assignees:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items: { $ref: '#/components/schemas/AssigneeOption' }
+            workStatuses:
+              type: array
+              minItems: 3
+              maxItems: 3
+              items: { $ref: '#/components/schemas/WorkStatusOption' }
+            defaultFrom: { type: string, format: date }
+            defaultTo: { type: string, format: date }
+    ReportResponse:
+      type: object
+      required: [success, data, message]
+      properties:
+        success: { type: boolean, const: true }
+        message: { type: string, const: 我的報表查詢成功。 }
+        data:
+          type: object
+          required: [from, to, assigneeId, assigneeName, totalTasks, trendPoints, statusBuckets]
+          properties:
+            from: { type: string, format: date }
+            to: { type: string, format: date }
+            assigneeId: { type: string, format: uuid }
+            assigneeName: { type: string }
+            workStatus: { type: [string, 'null'] }
+            totalTasks: { type: integer, format: int64 }
+            trendPoints:
+              type: array
+              items: { $ref: '#/components/schemas/TaskTrendPoint' }
+            statusBuckets:
+              type: array
+              minItems: 3
+              maxItems: 3
+              items: { $ref: '#/components/schemas/StatusBucket' }

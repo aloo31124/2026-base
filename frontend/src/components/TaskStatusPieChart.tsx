@@ -8,12 +8,17 @@ export interface TaskStatusBucket {
 interface TaskStatusPieChartProps {
   buckets: TaskStatusBucket[];
   scope: string;
+  testId?: string;
 }
 
 const COLORS = ["var(--primary)", "var(--accent)", "var(--secondary)"];
 
 /** 將狀態數量轉為可存取圓餅圖與精確文字圖例。 */
-export default function TaskStatusPieChart({ buckets, scope }: TaskStatusPieChartProps) {
+export default function TaskStatusPieChart({
+  buckets,
+  scope,
+  testId = "manager-status-pie",
+}: TaskStatusPieChartProps) {
   const total = buckets.reduce((sum, bucket) => sum + bucket.taskCount, 0);
   let allocated = 0;
   const segments = buckets.map((bucket, index) => {
@@ -28,7 +33,7 @@ export default function TaskStatusPieChart({ buckets, scope }: TaskStatusPieChar
   return (
     <figure className="status-pie-figure">
       <div
-        data-testid="manager-status-pie"
+        data-testid={testId}
         className="status-pie"
         role="img"
         aria-label={`${scope}的任務狀態比例，共 ${total} 筆任務`}

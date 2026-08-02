@@ -15,6 +15,7 @@
     "test:e2e:my-tasks": "cypress run --spec cypress/e2e/my-tasks.cy.ts",
     "test:e2e:system-report": "cypress run --spec cypress/e2e/system-report.cy.ts",
     "test:e2e:manager-report": "cypress run --spec cypress/e2e/manager-report.cy.ts",
+    "test:e2e:my-report": "cypress run --spec cypress/e2e/my-report.cy.ts",
     "test:e2e:open": "cypress open"
   },
   "dependencies": {

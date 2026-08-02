@@ -13,3 +13,4 @@
 - [任務指派](business-logic/task-assignment/SKILL.md) — 公司成員關係、合法受派人、我的任務進度、附件、提交與延期契約。
 - [系統報表](business-logic/system-report/SKILL.md) — 跨公司任務趨勢、統計口徑、日期補零、權限與測試契約。
 - [主管報表](business-logic/manager-report/SKILL.md) — 公司任務總覽、主管自己指派的趨勢與狀態比例、共用篩選、權限與測試契約。
+- [我的報表](business-logic/my-report/SKILL.md) — 員工自己的任務總覽、趨勢與狀態比例、本人資料隔離、共用篩選與測試契約。

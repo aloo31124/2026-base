@@ -15,6 +15,7 @@ import MyTasksPage from "./pages/MyTasksPage";
 import MyTaskEditPage from "./pages/MyTaskEditPage";
 import SystemReportPage from "./pages/SystemReportPage";
 import ManagerReportPage from "./pages/ManagerReportPage";
+import MyReportPage from "./pages/MyReportPage";
 
 function Guard({
   children,
@@ -133,6 +134,14 @@ export default function App() {
         element={
           <Guard>
             <MyTasksPage />
+          </Guard>
+        }
+      />
+      <Route
+        path="/my-reports"
+        element={
+          <Guard>
+            <MyReportPage />
           </Guard>
         }
       />
