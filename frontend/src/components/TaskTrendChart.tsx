@@ -6,6 +6,7 @@ export interface TaskTrendPoint {
 interface TaskTrendChartProps {
   points: TaskTrendPoint[];
   scope: string;
+  testId?: string;
 }
 
 const WIDTH = 800;
@@ -14,7 +15,7 @@ const PADDING_X = 52;
 const PADDING_Y = 34;
 
 /** 將任務趨勢轉為具座標、資料點與文字摘要的可存取 SVG 折線圖。 */
-export default function TaskTrendChart({ points, scope }: TaskTrendChartProps) {
+export default function TaskTrendChart({ points, scope, testId = "trend-chart" }: TaskTrendChartProps) {
   const maxCount = Math.max(1, ...points.map((point) => point.taskCount));
   const plotWidth = WIDTH - PADDING_X * 2;
   const plotHeight = HEIGHT - PADDING_Y * 2;
@@ -36,7 +37,7 @@ export default function TaskTrendChart({ points, scope }: TaskTrendChartProps) {
   return (
     <figure className="trend-chart-figure">
       <svg
-        data-testid="trend-chart"
+        data-testid={testId}
         className="trend-chart"
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"

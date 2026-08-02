@@ -1,0 +1,52 @@
+# 主管報表 Cypress 測試報告
+
+## 目錄
+
+- [測試摘要](#測試摘要) — 單一子模組 Cypress 執行結果
+- [Task 與 Checklist 對照](#task-與-checklist-對照) — 工作表 MUST 與驗收追蹤
+- [操作情境](#操作情境) — 公司摘要、篩選與兩圖表
+- [完成率](#完成率) — 1/1 scenario
+- [結論](#結論) — 前端流程驗收通過
+
+## 測試摘要
+
+- 執行日期：2026-08-02（Asia/Taipei）
+- Cypress：15.18.1
+- Browser：Electron 138 headless
+- Spec：`frontend/cypress/e2e/manager-report.cy.ts`
+- 執行指令：`npm --prefix frontend run test:e2e:manager-report`
+- 前置建置：`npm --prefix frontend run build` 成功
+
+## Task 與 Checklist 對照
+
+| 來源 | 覆蓋內容 | Cypress 證據 | 結果 |
+|---|---|---|---|
+| Sheet 第 18 列 | 主管頁面與同公司任務摘要 | 公司名稱、公司任務總數、主管指派總數 | 通過 |
+| Sheet 第 19 列 | 自己指派趨勢、執行者／狀態／日期篩選 | 預設一年、共用篩選、折線圖 | 通過 |
+| Sheet 第 20 列 | 自己指派狀態比例與相同篩選 | 標籤切換、圓餅圖、完成狀態 100% | 通過 |
+| T004、T013–T019 | React page、兩圖表、路由、樣式、Cypress script | `manager-report.cy.ts` | 通過 |
+| CHK018–CHK019 | UIUX、響應式與可存取圖表需求 | 可見標題、role 圖表、文字圖例 | 通過 |
+| CHK023–CHK025 | E2E、報告與 production build | Cypress 與 Vite 結果 | 通過 |
+
+## 操作情境
+
+1. 以 `MANAGER` session 開啟 `/manager-reports`。
+2. 確認公司名稱、公司任務總數 5、主管指派任務總數 3。
+3. 確認預設起迄日期及「指派任務趨勢」折線圖可見。
+4. 選擇執行者「陳員工」及執行狀態「已完成」，套用共用篩選。
+5. 確認主管指派任務總數更新為 1。
+6. 切換「指派任務狀態比」，確認圓餅圖與 `COMPLETED=100.0%`。
+7. 確認切換標籤後執行者與執行狀態條件仍保留。
+
+## 完成率
+
+| 指標 | 通過 | 總數 | 完成率 |
+|---|---:|---:|---:|
+| Cypress spec | 1 | 1 | 100% |
+| Test scenario | 1 | 1 | 100% |
+| 失敗 | 0 | 1 | 0% |
+| Pending／Skipped | 0 | 1 | 0% |
+
+## 結論
+
+主管報表 React page、共用篩選、公司摘要、折線圖、圓餅圖與標籤狀態保留皆通過 Cypress，前端完成率 100%。

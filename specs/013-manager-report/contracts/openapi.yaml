@@ -1,0 +1,31 @@
+openapi: 3.0.3
+info:
+  title: 主管報表 API
+  version: 1.0.0
+paths:
+  /api/manager/reports/filters:
+    get:
+      summary: 取得主管公司、執行者、狀態與預設日期選項
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 主管報表篩選選項查詢成功 }
+        '403': { description: 非主管或無主管資料 }
+        '409': { description: 主管未綁定公司 }
+  /api/manager/reports/report:
+    get:
+      summary: 取得公司摘要、主管指派趨勢與狀態比例
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: assigneeId, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: workStatus, in: query, required: false, schema: { type: string, enum: [PENDING, IN_PROGRESS, COMPLETED] } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date } }
+      responses:
+        '200': { description: 主管報表查詢成功 }
+        '400': { description: 日期或執行狀態不合法 }
+        '403': { description: 非主管 }
+        '404': { description: 找不到指定執行者 }
+        '409': { description: 主管未綁定公司 }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }

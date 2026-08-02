@@ -86,7 +86,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <div>
             <strong>{session?.fullName}</strong>
             <small>
-              {session?.roles.includes("SYSTEM_ADMIN") ? "系統管理員" : "員工"}
+              {session?.roles.includes("SYSTEM_ADMIN")
+                ? "系統管理員"
+                : session?.roles.includes("MANAGER")
+                  ? "主管"
+                  : "員工"}
             </small>
           </div>
           <button
@@ -136,6 +140,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <span className="nav-icon">↗</span>
             <span>任務指派</span>
           </NavLink>
+          {session?.roles.includes("MANAGER") && (
+            <NavLink to="/manager-reports">
+              <span className="nav-icon">◔</span>
+              <span>主管報表</span>
+            </NavLink>
+          )}
           <NavLink to="/my-tasks">
             <span className="nav-icon">✓</span>
             <span>我的任務</span>

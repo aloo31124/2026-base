@@ -58,6 +58,9 @@ public class SecurityConfig {
      * 依管理 API 路徑提供可追溯的模組權限錯誤訊息。
      */
     private String accessDeniedMessage(String requestUri) {
+        if (requestUri.startsWith("/api/manager/reports")) {
+            return "[主管報表] [api] 無主管權限。";
+        }
         if (requestUri.startsWith("/api/admin/system-reports")) {
             return "[系統報表] [api] 無系統管理員權限。";
         }

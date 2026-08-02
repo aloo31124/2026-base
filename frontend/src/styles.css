@@ -1671,6 +1671,10 @@ td {
   gap: 14px;
 }
 
+.manager-report-filter-fields {
+  grid-template-columns: repeat(2, minmax(150px, 0.9fr)) repeat(2, minmax(145px, 0.75fr)) auto;
+}
+
 .report-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1779,9 +1783,85 @@ td {
   background: #fff5f6;
 }
 
+.status-pie-figure {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1.2fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 72px);
+  margin: 0 auto;
+  width: min(100%, 860px);
+}
+
+.status-pie {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 320px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.status-pie-center {
+  display: grid;
+  place-items: center;
+  width: 54%;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--text) 9%, transparent);
+
+  strong {
+    font-size: clamp(1.6rem, 4vw, 2.7rem);
+    line-height: 1;
+  }
+
+  span {
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+}
+
+.status-pie-legend {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: 14px minmax(90px, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-soft) 55%, var(--surface));
+  }
+
+  li > span:last-child {
+    min-width: 58px;
+    color: var(--muted);
+    text-align: right;
+  }
+}
+
+.status-pie-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
 @media (max-width: 960px) {
   .report-filter-fields,
   .report-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manager-report-filter-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1796,6 +1876,14 @@ td {
   .report-filter-fields,
   .report-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .status-pie-figure {
+    grid-template-columns: 1fr;
+  }
+
+  .status-pie {
+    width: min(82vw, 280px);
   }
 
   .report-filter-fields .btn {

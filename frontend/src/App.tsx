@@ -14,19 +14,31 @@ import TaskAssignmentPage from "./pages/TaskAssignmentPage";
 import MyTasksPage from "./pages/MyTasksPage";
 import MyTaskEditPage from "./pages/MyTaskEditPage";
 import SystemReportPage from "./pages/SystemReportPage";
+import ManagerReportPage from "./pages/ManagerReportPage";
 
 function Guard({
   children,
   admin = false,
+  manager = false,
   unauthorizedMessage,
 }: {
   children: React.ReactNode;
   admin?: boolean;
+  manager?: boolean;
   unauthorizedMessage?: string;
 }) {
   const session = useAppSelector((s) => s.auth.session);
   if (!session) return <Navigate to="/login" replace />;
   if (admin && !session.roles.includes("SYSTEM_ADMIN")) {
+    return (
+      <Navigate
+        to="/unauthorized"
+        replace
+        state={{ message: unauthorizedMessage }}
+      />
+    );
+  }
+  if (manager && !session.roles.includes("MANAGER")) {
     return (
       <Navigate
         to="/unauthorized"
@@ -102,6 +114,17 @@ export default function App() {
         element={
           <Guard>
             <TaskAssignmentPage />
+          </Guard>
+        }
+      />
+      <Route
+        path="/manager-reports"
+        element={
+          <Guard
+            manager
+            unauthorizedMessage="[主管報表] [頁面] 無主管權限。"
+          >
+            <ManagerReportPage />
           </Guard>
         }
       />
